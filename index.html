@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Roadmap — Kirill</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #0088ff;
+    --accent3: #ff6b35;
+    --text: #e8e8f0;
+    --text-muted: #6b6b8a;
+    --done: #00ff88;
+    --progress: #0088ff;
+    --todo: #3a3a4a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--accent);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--accent);
+    display: block;
+  }
+
+  .header-meta {
+    text-align: right;
+  }
+
+  .level-badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    padding: 6px 16px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .score {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* Overall progress */
+  .overall-progress {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .skill-bars {
+    display: grid;
+    gap: 12px;
+  }
+
+  .skill-bar {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .skill-name {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .bar-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .bar-fill.done { background: var(--done); }
+  .bar-fill.progress { background: var(--accent2); }
+  .bar-fill.low { background: var(--accent3); }
+
+  .bar-pct {
+    font-size: 12px;
+    text-align: right;
+  }
+
+  /* Timeline */
+  .timeline {
+    padding: 60px 0;
+  }
+
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .timeline-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .total-weeks {
+    font-size: 12px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+  }
+
+  /* Module card */
+  .module {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0 32px;
+    margin-bottom: 0;
+    position: relative;
+  }
+
+  .module:not(:last-child) .module-line {
+    position: absolute;
+    left: 39px;
+    top: 50px;
+    bottom: -1px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .module-number {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+  }
+
+  .num-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .num-circle.status-done {
+    background: rgba(0,255,136,0.15);
+    border: 2px solid var(--done);
+    color: var(--done);
+  }
+
+  .num-circle.status-active {
+    background: rgba(0,136,255,0.15);
+    border: 2px solid var(--accent2);
+    color: var(--accent2);
+    box-shadow: 0 0 20px rgba(0,136,255,0.3);
+  }
+
+  .num-circle.status-todo {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .module-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .module-content:hover {
+    border-color: var(--accent2);
+  }
+
+  .module-content.status-done { border-left: 3px solid var(--done); }
+  .module-content.status-active { border-left: 3px solid var(--accent2); box-shadow: 0 0 30px rgba(0,136,255,0.1); }
+  .module-content.status-todo { border-left: 3px solid var(--border); }
+
+  .module-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .module-tag {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+
+  .tag-done { background: rgba(0,255,136,0.1); color: var(--done); }
+  .tag-active { background: rgba(0,136,255,0.1); color: var(--accent2); }
+  .tag-todo { background: var(--surface2); color: var(--text-muted); }
+
+  .module-weeks {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .module-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .module-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  /* Topics grid */
+  .topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .topic {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 11px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+
+  .topic-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .dot-done { background: var(--done); }
+  .dot-active { background: var(--accent2); }
+  .dot-todo { background: var(--text-muted); }
+
+  /* Tasks */
+  .tasks {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  .tasks-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .task {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .task::before {
+    content: '→';
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .task.done-task {
+    color: rgba(0,255,136,0.5);
+    text-decoration: line-through;
+  }
+
+  .task.done-task::before { content: '✓'; }
+
+  /* Module line connector */
+  .module-line { display: none; }
+
+  /* Stats footer */
+  .stats-footer {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 32px;
+  }
+
+  .stat-item { }
+
+  .stat-value {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Salary section */
+  .salary-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px;
+    margin: 48px 0;
+  }
+
+  .salary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 24px;
+  }
+
+  .salary-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+
+  .salary-level {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .salary-amount {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .salary-rub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  footer {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-left {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .footer-right {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .footer-right a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .module { animation: fadeIn 0.5s ease both; }
+  .module:nth-child(1) { animation-delay: 0.1s; }
+  .module:nth-child(2) { animation-delay: 0.15s; }
+  .module:nth-child(3) { animation-delay: 0.2s; }
+  .module:nth-child(4) { animation-delay: 0.25s; }
+  .module:nth-child(5) { animation-delay: 0.3s; }
+  .module:nth-child(6) { animation-delay: 0.35s; }
+  .module:nth-child(7) { animation-delay: 0.4s; }
+  .module:nth-child(8) { animation-delay: 0.45s; }
+  .module:nth-child(9) { animation-delay: 0.5s; }
+  .module:nth-child(10) { animation-delay: 0.55s; }
+  .module:nth-child(11) { animation-delay: 0.6s; }
+  .module:nth-child(12) { animation-delay: 0.65s; }
+
+  @media (max-width: 600px) {
+    .module { grid-template-columns: 50px 1fr; gap: 0 16px; }
+    .skill-bar { grid-template-columns: 100px 1fr 40px; }
+    .salary-grid { grid-template-columns: 1fr; }
+    .header-inner { flex-direction: column; align-items: flex-start; }
+    .header-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="logo">// DevOps Roadmap</div>
+        <h1>ПУТЬ<span>В DEVOPS</span></h1>
+      </div>
+      <div class="header-meta">
+        <div class="level-badge">Junior → Middle</div>
+        <div class="score">41%</div>
+        <div class="score-label">текущий уровень по тестированию</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Overall progress -->
+  <div class="overall-progress">
+    <div class="section-label">// Текущий уровень по блокам</div>
+    <div class="skill-bars">
+      <div class="skill-bar">
+        <div class="skill-name">Linux</div>
+        <div class="bar-track"><div class="bar-fill done" style="width:70%"></div></div>
+        <div class="bar-pct" style="color:var(--done)">70%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Сети</div>
+        <div class="bar-track"><div class="bar-fill done" style="width:80%"></div></div>
+        <div class="bar-pct" style="color:var(--done)">80%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Git</div>
+        <div class="bar-track"><div class="bar-fill progress" style="width:60%"></div></div>
+        <div class="bar-pct" style="color:var(--accent2)">60%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Docker</div>
+        <div class="bar-track"><div class="bar-fill low" style="width:20%"></div></div>
+        <div class="bar-pct" style="color:var(--accent3)">20%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Ansible</div>
+        <div class="bar-track"><div class="bar-fill low" style="width:10%"></div></div>
+        <div class="bar-pct" style="color:var(--accent3)">10%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Prometheus</div>
+        <div class="bar-track"><div class="bar-fill low" style="width:15%"></div></div>
+        <div class="bar-pct" style="color:var(--accent3)">15%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Kubernetes</div>
+        <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
+        <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+      </div>
+      <div class="skill-bar">
+        <div class="skill-name">Terraform</div>
+        <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
+        <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="timeline-header">
+      <div class="timeline-title">План обучения</div>
+      <div class="total-weeks">~24 недели · 6 месяцев</div>
+    </div>
+
+    <!-- Module 1 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-done">01</div>
+      </div>
+      <div class="module-content status-done">
+        <div class="module-top">
+          <span class="module-tag tag-done">✓ Завершено</span>
+          <span class="module-weeks">Недели 1–2</span>
+        </div>
+        <div class="module-title">Linux — Базовый уровень</div>
+        <div class="module-desc">Установка Fedora, настройка системы, базовые команды, файловая система, права доступа, процессы, сервисы systemd.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-done"></span>Установка Fedora 44</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Файловая система</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Права доступа chmod/chown</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Процессы ps/kill/top</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Systemd управление</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>SSH настройка</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Firewall / SELinux</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Пакетный менеджер DNF</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 2 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-done">02</div>
+      </div>
+      <div class="module-content status-done">
+        <div class="module-top">
+          <span class="module-tag tag-done">✓ Завершено</span>
+          <span class="module-weeks">Недели 3–4</span>
+        </div>
+        <div class="module-title">Git — Контроль версий</div>
+        <div class="module-desc">Система контроля версий, работа с ветками, разрешение конфликтов, публикация на GitHub.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-done"></span>git init, clone, add, commit</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Ветки и merge</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>Конфликты слияния</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>.gitignore правила</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>GitHub SSH</div>
+          <div class="topic"><span class="topic-dot dot-done"></span>push / pull</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>rebase vs merge</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>cherry-pick</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 3 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-active">03</div>
+      </div>
+      <div class="module-content status-active">
+        <div class="module-top">
+          <span class="module-tag tag-active">▶ В процессе</span>
+          <span class="module-weeks">Недели 5–6</span>
+        </div>
+        <div class="module-title">Bash Scripting</div>
+        <div class="module-desc">Написание shell скриптов для автоматизации. Фундамент для Docker entrypoint, CI/CD pipeline и Ansible.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-active"></span>Переменные и типы данных</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Условия if/elif/else</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Циклы for/while</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Функции</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Аргументы $1, $2, $@</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Коды возврата $?</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Работа с файлами</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Pipe и перенаправление</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>sed / awk / grep</div>
+          <div class="topic"><span class="topic-dot dot-active"></span>Скрипты автозапуска</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Скрипт мониторинга диска — алерт если заполнен больше 80%</div>
+            <div class="task">Скрипт резервного копирования с ротацией логов</div>
+            <div class="task">Парсер логов nginx — топ 10 IP адресов</div>
+            <div class="task">Скрипт деплоя приложения с проверками</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 4 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">04</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Следующий</span>
+          <span class="module-weeks">Недели 7–9</span>
+        </div>
+        <div class="module-title">Docker — Углублённо</div>
+        <div class="module-desc">Контейнеризация приложений. Layer cache, multi-stage builds, networking, volumes. Результат: уверенная работа с Docker в продакшне.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Dockerfile — все инструкции</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Layer cache оптимизация</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Multi-stage builds</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Volumes vs Bind mounts</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Docker networking</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Docker Compose углублённо</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Health checks</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Secrets управление</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Registry — push/pull</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Сканирование уязвимостей</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>OOMKilled диагностика</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Docker Desktop</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Оптимизировать Dockerfile — уменьшить образ с 900МБ до 80МБ</div>
+            <div class="task">Multi-stage build для Python приложения</div>
+            <div class="task">Настроить сеть между 3 контейнерами без expose портов</div>
+            <div class="task">Поднять полный стек app+postgres+redis+nginx одной командой</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 5 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">05</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 10–11</span>
+        </div>
+        <div class="module-title">CI/CD — GitHub Actions & GitLab CI</div>
+        <div class="module-desc">Автоматизация сборки, тестирования и деплоя. После этого модуля код будет деплоиться автоматически при каждом push.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Концепция CI/CD</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>GitHub Actions workflows</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>GitLab CI pipelines</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Stages: build/test/deploy</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Secrets в CI/CD</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Docker build в pipeline</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Деплой на сервер</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Артефакты и кэш</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Pipeline: push → тесты → сборка Docker образа → деплой</div>
+            <div class="task">Автоматическая публикация документации на GitHub Pages</div>
+            <div class="task">Matrix builds — тестирование на разных версиях Python</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 6 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">06</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 12–14</span>
+        </div>
+        <div class="module-title">Ansible — Автоматизация</div>
+        <div class="module-desc">Управление конфигурациями и автоматизация настройки серверов. Настройка 50 серверов одной командой.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Inventory файлы</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Playbooks и tasks</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Roles — структура</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Handlers</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Jinja2 шаблоны</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Ansible Vault — секреты</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Идемпотентность</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Условия и циклы</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Tags и limit</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Galaxy — готовые роли</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Playbook настройки нового сервера с нуля (SSH, firewall, Docker)</div>
+            <div class="task">Роль для деплоя нашего Python приложения</div>
+            <div class="task">Ansible Vault — зашифровать секреты в репозитории</div>
+            <div class="task">Деплой на РЕД ОС через Ansible из GitLab CI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 7 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">07</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 15–16</span>
+        </div>
+        <div class="module-title">Мониторинг — Prometheus + Grafana + Zabbix</div>
+        <div class="module-desc">Сбор метрик, построение дашбордов, настройка алертов. Знать когда сервер умирает раньше чем позвонят пользователи.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>PromQL язык запросов</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Counter vs Gauge vs Histogram</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Alerting rules</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Alertmanager</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Node Exporter</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Grafana дашборды</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Grafana Loki — логи</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Zabbix агент</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Zabbix триггеры</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>SLO / SLA / SLI</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">PromQL: запросы CPU, RAM, диск, сетевой трафик</div>
+            <div class="task">Дашборд в Grafana для нашего приложения</div>
+            <div class="task">Алерты: сервис упал, диск 85%, CPU 90% больше 10 минут</div>
+            <div class="task">Zabbix: мониторинг РЕД ОС виртуалки</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 8 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">08</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 17–18</span>
+        </div>
+        <div class="module-title">Redis & RabbitMQ</div>
+        <div class="module-desc">Кэширование данных и очереди сообщений. Две технологии которые требуют каждая вторая вакансия DevOps.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Redis — типы данных</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Redis — кэширование</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Redis Sentinel — HA</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Redis Cluster</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>RabbitMQ — exchanges</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>RabbitMQ — queues</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>RabbitMQ — routing</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Мониторинг обоих</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Поднять Redis в Docker, подключить к приложению</div>
+            <div class="task">RabbitMQ: producer отправляет, consumer обрабатывает</div>
+            <div class="task">Мониторинг Redis через Prometheus Redis Exporter</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 9 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">09</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 19–22</span>
+        </div>
+        <div class="module-title">Kubernetes — Оркестрация</div>
+        <div class="module-desc">Самая востребованная технология в DevOps 2026. Управление контейнерами в продакшне, автомасштабирование, zero-downtime деплой.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Архитектура кластера</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Pod, Deployment, Service</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>ConfigMap и Secrets</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Ingress контроллер</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Persistent Volumes</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>HPA автомасштабирование</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Rolling updates</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Helm charts</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>kubectl команды</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Namespace изоляция</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>RBAC безопасность</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Диагностика CrashLoop</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Развернуть приложение в minikube локально</div>
+            <div class="task">Helm chart для нашего Python приложения</div>
+            <div class="task">Настроить HPA — автомасштабирование по CPU</div>
+            <div class="task">Rolling update без downtime</div>
+            <div class="task">Prometheus в Kubernetes через Helm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 10 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">10</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Запланировано</span>
+          <span class="module-weeks">Недели 23–24</span>
+        </div>
+        <div class="module-title">Terraform — Infrastructure as Code</div>
+        <div class="module-desc">Описание инфраструктуры кодом. Создать сервер, настроить сеть, развернуть приложение — одной командой terraform apply.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>HCL синтаксис</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Providers</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Resources</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Variables и outputs</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>State management</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Modules</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>terraform plan/apply</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Remote state</div>
+        </div>
+        <div class="tasks">
+          <div class="tasks-label">// Практические задания</div>
+          <div class="task-list">
+            <div class="task">Создать VPS через Terraform (Selectel или Yandex Cloud)</div>
+            <div class="task">Модуль для типового сервера с мониторингом</div>
+            <div class="task">Полный стек: VPS + DNS + SSL + приложение через Terraform</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 11 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">11</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Бонус</span>
+          <span class="module-weeks">По мере роста</span>
+        </div>
+        <div class="module-title">Linux — Углублённо & Ядро</div>
+        <div class="module-desc">Работа с ядром Linux, производительность, оптимизация. Отличает Senior от Middle.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>Сигналы и прерывания</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Системные вызовы</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>cgroups и namespaces</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>eBPF мониторинг</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Профилирование perf</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>strace / ltrace</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Сетевой стек ядра</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Параметры sysctl</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module 12 -->
+    <div class="module">
+      <div class="module-number">
+        <div class="num-circle status-todo">12</div>
+      </div>
+      <div class="module-content status-todo">
+        <div class="module-top">
+          <span class="module-tag tag-todo">○ Бонус</span>
+          <span class="module-weeks">По мере роста</span>
+        </div>
+        <div class="module-title">DevSecOps — Безопасность</div>
+        <div class="module-desc">Безопасность в DevOps пайплайне. Тренд 2026 — компании платят premium за DevSecOps специалистов.</div>
+        <div class="topics-grid">
+          <div class="topic"><span class="topic-dot dot-todo"></span>HashiCorp Vault</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Сканирование образов Trivy</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>SAST/DAST в CI</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>OPA Policy as Code</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Zero Trust модель</div>
+          <div class="topic"><span class="topic-dot dot-todo"></span>Supply chain security</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /timeline -->
+
+  <!-- Salary section -->
+  <div class="salary-section">
+    <div class="section-label">// Зарплатные ожидания по рынку России 2026</div>
+    <div class="salary-grid">
+      <div class="salary-card">
+        <div class="salary-level">Junior DevOps</div>
+        <div class="salary-amount">80–120к</div>
+        <div class="salary-rub">руб/месяц</div>
+      </div>
+      <div class="salary-card">
+        <div class="salary-level">Middle DevOps</div>
+        <div class="salary-amount">150–250к</div>
+        <div class="salary-rub">руб/месяц</div>
+      </div>
+      <div class="salary-card">
+        <div class="salary-level">Senior DevOps</div>
+        <div class="salary-amount">300к+</div>
+        <div class="salary-rub">руб/месяц</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats footer -->
+  <div class="stats-footer">
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--done)">2</div>
+      <div class="stat-label">Модуля завершено</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--accent2)">1</div>
+      <div class="stat-label">В процессе</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--text-muted)">9</div>
+      <div class="stat-label">Впереди</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">24</div>
+      <div class="stat-label">Недель плана</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--accent3)">41%</div>
+      <div class="stat-label">Текущий уровень</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-left">Kirill Neustroev · DevOps Roadmap 2026</div>
+    <div class="footer-right">
+      <a href="https://github.com/khimeran" target="_blank">github.com/khimeran</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
