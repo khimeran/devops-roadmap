@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Ansible — Автоматизация</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/ansible$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Ansible
+    </div>
+    <h1>Ansible — <span>Автоматизация</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 06</span>
+      <span>Недели 12–14 · 21 день</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое Ansible и зачем</a></li>
+      <li><a href="#arch">Архитектура: agentless, push-модель</a></li>
+      <li><a href="#install">Установка и подготовка</a></li>
+      <li><a href="#inventory">Inventory: hosts, groups</a></li>
+      <li><a href="#adhoc">Ad-hoc команды</a></li>
+      <li><a href="#playbook">Playbooks и структура</a></li>
+      <li><a href="#tasks">Tasks и модули</a></li>
+      <li><a href="#handlers">Handlers и notify</a></li>
+      <li><a href="#vars">Variables: уровни и приоритет</a></li>
+      <li><a href="#jinja">Jinja2: шаблоны и фильтры</a></li>
+      <li><a href="#facts">Facts и gather_facts</a></li>
+      <li><a href="#conditions">Условия, циклы, blocks</a></li>
+      <li><a href="#roles">Roles: структура и переиспользование</a></li>
+      <li><a href="#vault">Ansible Vault — секреты</a></li>
+      <li><a href="#galaxy">Collections и Galaxy</a></li>
+      <li><a href="#idempotency">Идемпотентность и check mode</a></li>
+      <li><a href="#patterns">Limit, tags, serial, strategy</a></li>
+      <li><a href="#cheatsheet">Best practices и cheatsheet</a></li>
+    </ol>
+  </div>
+
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое Ansible и зачем</h2>
+    <p><strong>Ansible</strong> — система управления конфигурациями. Один YAML описывает <em>желаемое состояние</em> N серверов; <code>ansible-playbook</code> приводит их к этому состоянию.</p>
+    <p>Главное отличие от Bash-скриптов — <strong>идемпотентность</strong>: запустите playbook 1 или 100 раз — итог одинаковый. Модули проверяют текущее состояние и меняют только то, что отличается.</p>
+
+    <h3>Что делает в реальной жизни</h3>
+    <ul>
+      <li>Подготавливает голую VM (пакеты, пользователи, sudoers, SSH-ключи).</li>
+      <li>Деплоит приложения (pull кода, перезапуск systemd, миграции БД).</li>
+      <li>Раскатывает конфиги (nginx, postgres, prometheus) с шаблонами Jinja2.</li>
+      <li>Дёргает API: AWS, Hetzner, Yandex Cloud, Proxmox.</li>
+      <li>Оркестрирует upgrade rolling-стратегией (5 серверов за раз).</li>
+    </ul>
+
+    <h3>Когда не Ansible</h3>
+    <ul>
+      <li><strong>Provisioning инфры</strong> — лучше Terraform (state, plan).</li>
+      <li><strong>Контейнеры</strong> — Kubernetes/Helm.</li>
+      <li><strong>Имиджи</strong> — Packer (Ansible как provisioner внутри Packer — норм).</li>
+      <li><strong>Сотни тысяч хостов</strong> — push-модель упирается в SSH-пул; SaltStack/Puppet масштабируются лучше.</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="arch">
+    <h2><span class="num">// 02</span>Архитектура: agentless, push-модель</h2>
+    <p>Ansible не требует агентов. На целевом хосте нужны только:</p>
+    <ul>
+      <li>SSH-доступ (Linux/macOS) или WinRM/PSRP (Windows).</li>
+      <li>Python 3 — для исполнения модулей.</li>
+    </ul>
+
+    <h3>Как выполняется task</h3>
+    <ol>
+      <li><strong>Control node</strong> читает playbook и inventory.</li>
+      <li>Открывает SSH-сессию (с <code>ControlPersist</code> для скорости).</li>
+      <li>Сериализует модуль в Python-скрипт.</li>
+      <li>Копирует в <code>~/.ansible/tmp/</code> на целевом хосте.</li>
+      <li>Запускает с нужными аргументами, забирает JSON-результат.</li>
+      <li>Удаляет временные файлы.</li>
+    </ol>
+
+    <table class="compare">
+      <thead><tr><th></th><th>Ansible</th><th>Puppet / Chef</th><th>Salt</th></tr></thead>
+      <tbody>
+        <tr><td>Модель</td><td>Push (SSH)</td><td>Pull (агент)</td><td>Push/Pull (ZeroMQ)</td></tr>
+        <tr><td>Агент на хосте</td><td>Не нужен</td><td>Нужен</td><td>Salt minion</td></tr>
+        <tr><td>Язык</td><td>YAML</td><td>Ruby DSL</td><td>YAML + Jinja</td></tr>
+        <tr><td>Скорость на 1000+ хостов</td><td>Средняя</td><td>Высокая</td><td>Высокая</td></tr>
+        <tr><td>Кривая обучения</td><td>Низкая</td><td>Средняя/Высокая</td><td>Средняя</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <div class="callout-label">// Терминология</div>
+      <strong>Control node</strong> — машина, где запущен <code>ansible-playbook</code> (обычно ноутбук или CI runner). <strong>Managed node</strong> — целевой хост.
+    </div>
+  </section>
+
+  <section class="note-section" id="install">
+    <h2><span class="num">// 03</span>Установка и подготовка</h2>
+
+<pre><code><span class="cmt"># Ubuntu/Debian — рекомендуется через pipx</span>
+sudo apt install -y pipx
+pipx install --include-deps ansible
+
+<span class="cmt"># Альтернатива — pip в venv</span>
+python3 -m venv ~/.ansible-venv
+source ~/.ansible-venv/bin/activate
+pip install ansible
+
+<span class="cmt"># Проверка</span>
+ansible --version
+ansible-playbook --version
+</code></pre>
+
+    <h3>Структура проекта (рекомендуется)</h3>
+<pre><code>infra/
+├── ansible.cfg
+├── inventories/
+│   ├── production/
+│   │   ├── hosts.yml
+│   │   ├── group_vars/
+│   │   │   ├── all.yml
+│   │   │   └── webservers.yml
+│   │   └── host_vars/
+│   │       └── web-01.yml
+│   └── staging/...
+├── roles/
+│   └── nginx/
+│       ├── tasks/
+│       ├── handlers/
+│       ├── templates/
+│       └── defaults/
+├── playbooks/
+│   ├── site.yml
+│   └── deploy.yml
+└── requirements.yml      <span class="cmt"># collections + roles</span>
+</code></pre>
+
+    <h3>ansible.cfg</h3>
+<pre><code>[defaults]
+inventory = inventories/production/hosts.yml
+roles_path = roles
+host_key_checking = False
+forks = 20
+stdout_callback = yaml
+retry_files_enabled = False
+
+[ssh_connection]
+pipelining = True
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s
+</code></pre>
+    <p><strong>pipelining = True</strong> — главный буст скорости (×2–4): модули доставляются через stdin, без записи на диск.</p>
+  </section>
+
+  <section class="note-section" id="inventory">
+    <h2><span class="num">// 04</span>Inventory: hosts, groups</h2>
+    <p>Inventory — список хостов и групп. Поддерживает форматы INI и YAML. YAML — современный стандарт.</p>
+
+<pre><code><span class="cmt"># inventories/production/hosts.yml</span>
+<span class="kw">all</span>:
+  vars:
+    ansible_user: deploy
+    ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+  children:
+    webservers:
+      hosts:
+        web-01:
+          ansible_host: 10.0.1.10
+        web-02:
+          ansible_host: 10.0.1.11
+    databases:
+      hosts:
+        db-01:
+          ansible_host: 10.0.2.10
+          postgres_version: <span class="str">"16"</span>
+    production:
+      children: [webservers, databases]
+</code></pre>
+
+    <h3>Patterns: как выбрать хосты</h3>
+<pre><code>ansible all -m ping
+ansible webservers -m ping
+ansible <span class="str">'webservers:&amp;production'</span> -m ping     <span class="cmt"># пересечение</span>
+ansible <span class="str">'webservers:!web-01'</span> -m ping         <span class="cmt"># исключение</span>
+ansible <span class="str">'web-*'</span> -m ping                      <span class="cmt"># glob</span>
+ansible <span class="str">'~web-[0-9]+'</span> -m ping               <span class="cmt"># regex</span>
+</code></pre>
+
+    <h3>Динамический inventory</h3>
+    <p>Inventory может быть <strong>скриптом</strong>, который возвращает JSON. Плагины умеют тянуть хосты из AWS/GCP/Hetzner Cloud/Proxmox/Terraform state:</p>
+<pre><code><span class="cmt"># inventories/aws_ec2.yml</span>
+<span class="kw">plugin</span>: amazon.aws.aws_ec2
+regions: [us-east-1]
+filters:
+  tag:Environment: production
+keyed_groups:
+  - prefix: tag
+    key: tags.Role
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Совет</div>
+      Никогда не редактируйте inventory руками для cloud-хостов — это рассинхрон с реальностью. Используйте dynamic inventory или генерируйте из Terraform output.
+    </div>
+  </section>
+
+  <section class="note-section" id="adhoc">
+    <h2><span class="num">// 05</span>Ad-hoc команды</h2>
+    <p>Запуск одного модуля без playbook — для проверок и быстрых операций:</p>
+
+<pre><code><span class="cmt"># Проверка живости</span>
+ansible all -m ping
+
+<span class="cmt"># Произвольная shell-команда</span>
+ansible webservers -m shell -a <span class="str">"uptime"</span>
+ansible webservers -m command -a <span class="str">"df -h"</span>          <span class="cmt"># безопаснее, без shell</span>
+
+<span class="cmt"># Установка пакета</span>
+ansible webservers -m apt -a <span class="str">"name=nginx state=present update_cache=yes"</span> --become
+
+<span class="cmt"># Копирование файла</span>
+ansible webservers -m copy -a <span class="str">"src=./nginx.conf dest=/etc/nginx/nginx.conf"</span> --become
+
+<span class="cmt"># Перезапуск сервиса</span>
+ansible webservers -m service -a <span class="str">"name=nginx state=restarted"</span> --become
+
+<span class="cmt"># Сбор фактов</span>
+ansible web-01 -m setup
+ansible web-01 -m setup -a <span class="str">"filter=ansible_distribution*"</span>
+</code></pre>
+
+    <h3>shell vs command vs raw</h3>
+    <ul>
+      <li><strong>command</strong> — без shell. Нет pipes, redirects, переменных. Безопаснее.</li>
+      <li><strong>shell</strong> — есть pipes и переменные. Использовать только когда нужно.</li>
+      <li><strong>raw</strong> — без Python на target. Для бутстрапа (установка Python на голую BSD/embedded).</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-label">// Антипаттерн</div>
+      <code>ansible all -m shell -a "apt install nginx"</code> — не используйте shell для того, что есть в нативных модулях (<code>apt</code>, <code>service</code>, <code>user</code>). Нативный модуль идемпотентен, shell — нет.
+    </div>
+  </section>
+
+  <section class="note-section" id="playbook">
+    <h2><span class="num">// 06</span>Playbooks и структура</h2>
+    <p>Playbook — список <strong>plays</strong>. Play — сценарий применения tasks к группе хостов.</p>
+
+<pre><code><span class="cmt"># playbooks/site.yml</span>
+- <span class="kw">name</span>: Configure webservers
+  hosts: webservers
+  become: true
+  gather_facts: true
+  vars:
+    nginx_port: 80
+
+  pre_tasks:
+    - name: Update apt cache
+      apt: { update_cache: yes, cache_valid_time: 3600 }
+
+  roles:
+    - common
+    - nginx
+
+  tasks:
+    - name: Deploy application
+      git:
+        repo: <span class="str">"https://github.com/org/app.git"</span>
+        dest: /opt/app
+        version: main
+      notify: restart app
+
+  post_tasks:
+    - name: Verify health
+      uri:
+        url: <span class="str">"http://localhost:{{ nginx_port }}/health"</span>
+        status_code: 200
+
+  handlers:
+    - name: restart app
+      service: { name: app, state: restarted }
+</code></pre>
+
+    <h3>Порядок выполнения внутри play</h3>
+    <ol>
+      <li><strong>gather_facts</strong> (если не <code>false</code>).</li>
+      <li><strong>pre_tasks</strong>.</li>
+      <li><strong>roles</strong>: их <code>tasks/main.yml</code>.</li>
+      <li><strong>tasks</strong>.</li>
+      <li><strong>post_tasks</strong>.</li>
+      <li><strong>handlers</strong> — в конце play, если были <code>notify</code>.</li>
+    </ol>
+
+    <h3>Запуск</h3>
+<pre><code>ansible-playbook site.yml
+ansible-playbook site.yml --check                <span class="cmt"># dry-run</span>
+ansible-playbook site.yml --diff                 <span class="cmt"># показать изменения</span>
+ansible-playbook site.yml -l web-01              <span class="cmt"># только этот хост</span>
+ansible-playbook site.yml --tags nginx           <span class="cmt"># только эти tag</span>
+ansible-playbook site.yml --start-at-task <span class="str">"Deploy"</span>
+ansible-playbook site.yml -vvv                   <span class="cmt"># verbose</span>
+</code></pre>
+  </section>
+
+  <section class="note-section" id="tasks">
+    <h2><span class="num">// 07</span>Tasks и модули</h2>
+    <p>Task — одна операция: запуск модуля с параметрами.</p>
+
+<pre><code>- <span class="kw">name</span>: Create user
+  ansible.builtin.user:
+    name: deploy
+    groups: sudo
+    shell: /bin/bash
+    state: present
+  become: true
+  tags: [users]
+  register: user_result
+</code></pre>
+
+    <h3>Самые используемые модули</h3>
+    <table class="compare">
+      <thead><tr><th>Категория</th><th>Модули</th></tr></thead>
+      <tbody>
+        <tr><td>Пакеты</td><td><code>apt</code>, <code>dnf</code>, <code>yum</code>, <code>package</code> (универсальный), <code>pip</code></td></tr>
+        <tr><td>Файлы</td><td><code>copy</code>, <code>template</code>, <code>file</code>, <code>lineinfile</code>, <code>blockinfile</code>, <code>fetch</code></td></tr>
+        <tr><td>Сервисы</td><td><code>service</code>, <code>systemd</code></td></tr>
+        <tr><td>Пользователи</td><td><code>user</code>, <code>group</code>, <code>authorized_key</code></td></tr>
+        <tr><td>Сеть</td><td><code>uri</code> (HTTP), <code>get_url</code>, <code>firewalld</code>, <code>ufw</code></td></tr>
+        <tr><td>Контейнеры</td><td><code>community.docker.docker_container</code>, <code>community.docker.docker_compose_v2</code></td></tr>
+        <tr><td>БД</td><td><code>community.postgresql.*</code>, <code>community.mysql.*</code></td></tr>
+        <tr><td>Контроль</td><td><code>command</code>, <code>shell</code>, <code>script</code>, <code>raw</code>, <code>debug</code>, <code>fail</code>, <code>assert</code>, <code>set_fact</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>FQCN (Fully Qualified Collection Name)</h3>
+    <p>Современный стиль: <code>ansible.builtin.apt</code> вместо <code>apt</code>. Это явно указывает collection и избегает конфликтов имён. Все новые playbook'ы пишите с FQCN.</p>
+
+    <h3>register и debug</h3>
+<pre><code>- name: Get kernel version
+  command: uname -r
+  register: kernel
+  changed_when: false
+
+- debug:
+    var: kernel.stdout
+
+- debug:
+    msg: <span class="str">"Kernel is {{ kernel.stdout }}"</span>
+</code></pre>
+  </section>
+
+  <section class="note-section" id="handlers">
+    <h2><span class="num">// 08</span>Handlers и notify</h2>
+    <p>Handler — task, который запускается <strong>только если уведомлён</strong>, и только один раз за play (в конце).</p>
+
+<pre><code><span class="kw">tasks</span>:
+  - name: Render nginx config
+    template:
+      src: nginx.conf.j2
+      dest: /etc/nginx/nginx.conf
+    notify: reload nginx
+
+  - name: Render sites-enabled
+    template:
+      src: site.j2
+      dest: /etc/nginx/sites-enabled/{{ item }}.conf
+    loop: [api, web]
+    notify: reload nginx
+
+<span class="kw">handlers</span>:
+  - name: reload nginx
+    service:
+      name: nginx
+      state: reloaded
+</code></pre>
+
+    <p>Если оба template-таска поменяли файлы — <strong>nginx reload произойдёт один раз</strong>. Если не поменяли — handler не сработает.</p>
+
+    <h3>listen — несколько handlers на один сигнал</h3>
+<pre><code><span class="kw">tasks</span>:
+  - template: { src: app.conf.j2, dest: /etc/app/conf }
+    notify: <span class="str">"app config changed"</span>
+
+<span class="kw">handlers</span>:
+  - name: restart app
+    service: { name: app, state: restarted }
+    listen: <span class="str">"app config changed"</span>
+  - name: flush cache
+    command: appctl cache:flush
+    listen: <span class="str">"app config changed"</span>
+</code></pre>
+
+    <h3>force_handlers</h3>
+    <p>По умолчанию handlers не запускаются, если в play произошла ошибка. <code>force_handlers: true</code> или <code>--force-handlers</code> заставляет запустить handlers всех успешных tasks.</p>
+
+    <div class="callout tip">
+      <div class="callout-label">// Best practice</div>
+      Имя handler пишите <strong>в нижнем регистре</strong> и описательно (<code>reload nginx</code>, не <code>RestartNginx</code>) — оно используется как идентификатор в <code>notify:</code>.
+    </div>
+  </section>
+
+  <section class="note-section" id="vars">
+    <h2><span class="num">// 09</span>Variables: уровни и приоритет</h2>
+    <p>Переменные можно объявить в 22 местах. Приоритет (низший → высший):</p>
+    <ol>
+      <li>role defaults (<code>roles/X/defaults/main.yml</code>)</li>
+      <li>inventory file vars</li>
+      <li>inventory group_vars/all</li>
+      <li>playbook group_vars/all</li>
+      <li>inventory group_vars/*</li>
+      <li>playbook group_vars/*</li>
+      <li>inventory host_vars/*</li>
+      <li>playbook host_vars/*</li>
+      <li>host facts (gathered)</li>
+      <li>play vars</li>
+      <li>play vars_files</li>
+      <li>role vars (<code>roles/X/vars/main.yml</code>)</li>
+      <li>block vars</li>
+      <li>task vars</li>
+      <li>set_fact</li>
+      <li><strong>extra vars (<code>-e</code>) — побеждают всех</strong></li>
+    </ol>
+
+    <h3>Практически важно знать</h3>
+    <ul>
+      <li><strong>defaults</strong> — для роли всегда заводите defaults, иначе пользователи будут падать.</li>
+      <li><strong>group_vars / host_vars</strong> — основной канал для пользовательских значений.</li>
+      <li><strong>vars</strong> в роли — для константных значений, не предполагающих переопределения.</li>
+      <li><strong>set_fact</strong> — runtime-вычисление, остаётся до конца play.</li>
+    </ul>
+
+<pre><code><span class="cmt"># group_vars/webservers.yml</span>
+<span class="kw">nginx_port</span>: 8080
+<span class="kw">nginx_workers</span>: <span class="str">"{{ ansible_processor_vcpus | default(2) }}"</span>
+</code></pre>
+
+    <h3>Lazy evaluation</h3>
+    <p>Все Jinja2-выражения вычисляются <strong>в момент использования</strong>, а не объявления. Поэтому можно ссылаться на переменные, которые будут определены позже:</p>
+<pre><code><span class="kw">app_url</span>: <span class="str">"http://{{ inventory_hostname }}:{{ nginx_port }}"</span>
+</code></pre>
+  </section>
+
+  <section class="note-section" id="jinja">
+    <h2><span class="num">// 10</span>Jinja2: шаблоны и фильтры</h2>
+    <p>Ansible использует Jinja2 для рендеринга шаблонов (модуль <code>template</code>) и для выражений в YAML (<code>{{ }}</code>, <code>{% %}</code>).</p>
+
+    <h3>Шаблон: templates/nginx.conf.j2</h3>
+<pre><code>worker_processes {{ nginx_workers }};
+
+events {
+    worker_connections {{ nginx_worker_connections | default(1024) }};
+}
+
+http {
+    {% for upstream in upstreams %}
+    upstream {{ upstream.name }} {
+        {% for backend in upstream.backends %}
+        server {{ backend.host }}:{{ backend.port }};
+        {% endfor %}
+    }
+    {% endfor %}
+}
+</code></pre>
+
+    <h3>Часто используемые фильтры</h3>
+    <table class="compare">
+      <thead><tr><th>Фильтр</th><th>Назначение</th></tr></thead>
+      <tbody>
+        <tr><td><code>default('x')</code></td><td>Если переменная undefined → x</td></tr>
+        <tr><td><code>mandatory</code></td><td>Упасть, если undefined</td></tr>
+        <tr><td><code>to_json</code> / <code>to_yaml</code> / <code>to_nice_yaml</code></td><td>Сериализация</td></tr>
+        <tr><td><code>from_json</code> / <code>from_yaml</code></td><td>Парсинг</td></tr>
+        <tr><td><code>b64encode</code> / <code>b64decode</code></td><td>Base64</td></tr>
+        <tr><td><code>hash('sha256')</code> / <code>password_hash('bcrypt')</code></td><td>Хэширование</td></tr>
+        <tr><td><code>regex_replace('p','r')</code></td><td>Regex замена</td></tr>
+        <tr><td><code>join(',')</code></td><td>Соединить список</td></tr>
+        <tr><td><code>unique</code> / <code>sort</code> / <code>length</code></td><td>Операции над списком</td></tr>
+        <tr><td><code>dict2items</code> / <code>items2dict</code></td><td>Конвертация dict ↔ list</td></tr>
+        <tr><td><code>ipaddr('network')</code></td><td>IP-арифметика</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Тесты</h3>
+<pre><code>{{ var is defined }}
+{{ var is none }}
+{{ path is file }}
+{{ result is changed }}
+{{ result is succeeded }}
+</code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// Подводный камень</div>
+      В YAML значение, начинающееся с <code>{{</code>, нужно <strong>в кавычках</strong>: <code>port: "{{ var }}"</code>. Иначе YAML-парсер увидит начало dict и ругнётся.
+    </div>
+  </section>
+
+  <section class="note-section" id="facts">
+    <h2><span class="num">// 11</span>Facts и gather_facts</h2>
+    <p>Facts — переменные, собранные с целевого хоста: дистрибутив, ядро, сеть, диски, CPU, память. Доступны как <code>ansible_*</code>.</p>
+
+<pre><code>- debug:
+    msg: |
+      OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      Kernel: {{ ansible_kernel }}
+      IP: {{ ansible_default_ipv4.address }}
+      CPU: {{ ansible_processor_vcpus }} cores
+      RAM: {{ (ansible_memtotal_mb / 1024) | round(1) }} GB
+</code></pre>
+
+    <h3>Часто используемые facts</h3>
+    <ul>
+      <li><code>ansible_distribution</code>, <code>ansible_distribution_major_version</code></li>
+      <li><code>ansible_os_family</code> (Debian / RedHat / Suse)</li>
+      <li><code>ansible_architecture</code> (x86_64, aarch64)</li>
+      <li><code>ansible_default_ipv4.address</code> / <code>ansible_all_ipv4_addresses</code></li>
+      <li><code>ansible_hostname</code> / <code>ansible_fqdn</code> / <code>inventory_hostname</code></li>
+      <li><code>ansible_processor_vcpus</code>, <code>ansible_memtotal_mb</code></li>
+      <li><code>ansible_mounts</code> (список диск-mount'ов)</li>
+      <li><code>ansible_date_time.iso8601</code></li>
+    </ul>
+
+    <h3>Кэширование facts</h3>
+<pre><code><span class="cmt"># ansible.cfg</span>
+[defaults]
+fact_caching = jsonfile
+fact_caching_connection = /tmp/ansible_facts
+fact_caching_timeout = 7200
+</code></pre>
+    <p>Полезно, если запускаете playbook на 100+ хостов часто. Альтернативный backend — redis.</p>
+
+    <h3>Custom facts</h3>
+    <p>Положите исполняемый файл в <code>/etc/ansible/facts.d/myapp.fact</code> на target — он попадёт в <code>ansible_local.myapp</code>.</p>
+  </section>
+
+  <section class="note-section" id="conditions">
+    <h2><span class="num">// 12</span>Условия, циклы, blocks</h2>
+
+    <h3>when</h3>
+<pre><code>- name: Install nginx on Debian
+  apt: { name: nginx, state: present }
+  when: ansible_os_family == <span class="str">"Debian"</span>
+
+- name: Skip on staging
+  command: ./run_prod_only.sh
+  when:
+    - environment == <span class="str">"production"</span>
+    - inventory_hostname not in groups[<span class="str">'maintenance'</span>]
+</code></pre>
+
+    <h3>loop</h3>
+<pre><code>- name: Install several packages
+  apt: { name: <span class="str">"{{ item }}"</span>, state: present }
+  loop: [nginx, git, curl, vim]
+
+- name: Create users
+  user:
+    name: <span class="str">"{{ item.name }}"</span>
+    groups: <span class="str">"{{ item.groups | default('users') }}"</span>
+  loop:
+    - { name: alice, groups: sudo }
+    - { name: bob }
+
+- name: With index
+  debug: { msg: <span class="str">"{{ ansible_loop.index }}: {{ item }}"</span> }
+  loop: [a, b, c]
+  loop_control:
+    extended: true
+</code></pre>
+
+    <h3>block / rescue / always</h3>
+<pre><code>- block:
+    - name: Try risky operation
+      command: ./migrate.sh
+  rescue:
+    - name: Rollback on failure
+      command: ./rollback.sh
+    - fail:
+        msg: <span class="str">"Migration failed and rolled back"</span>
+  always:
+    - name: Clean tmp
+      file: { path: /tmp/migration, state: absent }
+</code></pre>
+
+    <h3>changed_when / failed_when</h3>
+    <p>Иногда <code>command/shell</code> возвращают 0, но что-то реально поменялось — или наоборот. Управляйте семантикой явно:</p>
+<pre><code>- shell: my-tool status
+  register: r
+  changed_when: <span class="str">"'pending'"</span> in r.stdout
+  failed_when: r.rc != 0 and <span class="str">"'no changes'"</span> not in r.stderr
+</code></pre>
+  </section>
+
+  <section class="note-section" id="roles">
+    <h2><span class="num">// 13</span>Roles: структура и переиспользование</h2>
+    <p>Role — стандартизированная упаковка tasks/handlers/templates/vars для одной «штуки» (nginx, postgres, kubernetes-node).</p>
+
+<pre><code>roles/nginx/
+├── defaults/main.yml      <span class="cmt"># дефолты, низкий приоритет</span>
+├── vars/main.yml          <span class="cmt"># константы роли</span>
+├── tasks/main.yml         <span class="cmt"># точка входа</span>
+├── handlers/main.yml
+├── templates/
+│   └── nginx.conf.j2
+├── files/
+│   └── ssl-cert.pem
+├── meta/main.yml          <span class="cmt"># зависимости, поддерж. ОС</span>
+└── README.md
+</code></pre>
+
+    <h3>tasks/main.yml — точка входа</h3>
+<pre><code>- name: Install nginx
+  apt: { name: nginx, state: present }
+
+- name: Configure
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify: reload nginx
+
+- name: Ensure service
+  service: { name: nginx, state: started, enabled: true }
+</code></pre>
+
+    <h3>Использование</h3>
+<pre><code>- <span class="kw">hosts</span>: webservers
+  become: true
+  roles:
+    - common
+    - role: nginx
+      vars:
+        nginx_port: 8080
+    - { role: monitoring, tags: monitoring }
+
+  tasks:
+    - name: Include role mid-play
+      import_role:                  <span class="cmt"># статический include</span>
+        name: backup
+    - include_role:                 <span class="cmt"># динамический</span>
+        name: deploy
+        tasks_from: rollback.yml
+</code></pre>
+
+    <h3>import_role vs include_role</h3>
+    <ul>
+      <li><strong>import_role</strong> — резолвится в начале play, нельзя использовать переменные времени выполнения.</li>
+      <li><strong>include_role</strong> — резолвится в runtime, можно в loop, with conditional на runtime-vars.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Принцип</div>
+      Одна роль = одна вещь. Если в роли больше 10 файлов в <code>tasks/</code> — пора разделить. Hi-cohesion, low-coupling работает и в Ansible.
+    </div>
+  </section>
+
+  <section class="note-section" id="vault">
+    <h2><span class="num">// 14</span>Ansible Vault — секреты</h2>
+    <p>Vault шифрует файлы AES-256 паролем. В git коммитятся уже зашифрованные.</p>
+
+<pre><code><span class="cmt"># Создать зашифрованный файл</span>
+ansible-vault create group_vars/production/secrets.yml
+
+<span class="cmt"># Редактировать</span>
+ansible-vault edit group_vars/production/secrets.yml
+
+<span class="cmt"># Зашифровать существующий</span>
+ansible-vault encrypt group_vars/production/secrets.yml
+
+<span class="cmt"># Расшифровать (обычно не нужно)</span>
+ansible-vault decrypt group_vars/production/secrets.yml
+
+<span class="cmt"># Сменить пароль</span>
+ansible-vault rekey group_vars/production/secrets.yml
+
+<span class="cmt"># Зашифровать одно значение (inline)</span>
+ansible-vault encrypt_string <span class="str">'s3cr3t'</span> --name <span class="str">'db_password'</span>
+</code></pre>
+
+    <h3>Запуск с vault</h3>
+<pre><code><span class="cmt"># Запрос пароля</span>
+ansible-playbook site.yml --ask-vault-pass
+
+<span class="cmt"># Пароль из файла</span>
+ansible-playbook site.yml --vault-password-file ~/.vault_pass
+
+<span class="cmt"># Скрипт-провайдер пароля (можно тянуть из 1Password/Vault)</span>
+ansible-playbook site.yml --vault-password-file ./vault_pass.sh
+</code></pre>
+
+    <h3>Несколько vault'ов (vault-id)</h3>
+<pre><code>ansible-vault encrypt --vault-id prod@~/.vp_prod file.yml
+ansible-playbook site.yml \
+  --vault-id prod@~/.vp_prod \
+  --vault-id dev@~/.vp_dev
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Альтернативы</div>
+      Vault удобен для маленьких команд. Для больших — HashiCorp Vault / AWS Secrets Manager / SOPS (Mozilla). Подключаются через lookup-плагины: <code>{{ lookup('community.hashi_vault.hashi_vault', 'secret=...') }}</code>.
+    </div>
+  </section>
+
+  <section class="note-section" id="galaxy">
+    <h2><span class="num">// 15</span>Collections и Galaxy</h2>
+    <p>С Ansible 2.10 модули вынесены в <strong>collections</strong>. Базовое (<code>ansible.builtin.*</code>) поставляется с дистрибутивом; всё остальное ставится отдельно.</p>
+
+<pre><code><span class="cmt"># Установить collection</span>
+ansible-galaxy collection install community.docker
+ansible-galaxy collection install community.postgresql
+
+<span class="cmt"># Из requirements.yml</span>
+ansible-galaxy collection install -r requirements.yml
+</code></pre>
+
+<pre><code><span class="cmt"># requirements.yml</span>
+<span class="kw">collections</span>:
+  - name: community.docker
+    version: <span class="str">"&gt;=3.4.0"</span>
+  - name: community.postgresql
+  - name: ansible.posix
+
+<span class="kw">roles</span>:
+  - name: geerlingguy.docker
+    version: <span class="str">"7.0.0"</span>
+  - src: https://github.com/org/role-x.git
+    scm: git
+    version: main
+    name: role_x
+</code></pre>
+
+    <h3>Использование</h3>
+<pre><code>- community.docker.docker_container:
+    name: app
+    image: nginx:1.27
+    state: started
+    ports: [<span class="str">"80:80"</span>]
+</code></pre>
+
+    <p>В тяжёлой инфре имеет смысл написать <strong>свою collection</strong>: общие роли + плагины + модули, версионированные и переиспользуемые между проектами.</p>
+  </section>
+
+  <section class="note-section" id="idempotency">
+    <h2><span class="num">// 16</span>Идемпотентность и check mode</h2>
+    <p>Идемпотентность = многократный запуск ≡ однократному. Это <strong>главное обещание</strong> Ansible.</p>
+
+    <h3>Гарантирует или нарушает?</h3>
+    <ul>
+      <li><strong>Гарантирует:</strong> нативные модули (<code>apt</code>, <code>file</code>, <code>service</code>, <code>user</code>, <code>template</code>).</li>
+      <li><strong>Нарушает:</strong> <code>command</code>, <code>shell</code>, <code>script</code> — нужно явно указать <code>creates:</code>, <code>removes:</code> или <code>changed_when:</code>.</li>
+    </ul>
+
+<pre><code><span class="cmt"># Идемпотентность через creates</span>
+- name: Compile dependencies
+  command: ./configure &amp;&amp; make
+  args:
+    chdir: /opt/src
+    creates: /opt/src/.compiled        <span class="cmt"># не запускать, если файл есть</span>
+
+<span class="cmt"># Через changed_when</span>
+- shell: my-tool reload
+  register: r
+  changed_when: <span class="str">"'reloaded'"</span> in r.stdout
+</code></pre>
+
+    <h3>Check mode (dry-run)</h3>
+<pre><code>ansible-playbook site.yml --check --diff
+</code></pre>
+    <p>Показывает, что <em>было бы</em> изменено. Часть модулей не поддерживает check mode полностью (например, <code>command</code>) — они скипаются с warning.</p>
+
+    <h3>idempotency tests в CI</h3>
+    <p>Идиоматическая проверка: второй прогон playbook должен показать 0 changed. Часто запихивают в Molecule (тест-фреймворк для ролей).</p>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило</div>
+      Если playbook на втором прогоне показывает <strong>changed: N&gt;0</strong> — где-то идемпотентность сломана. Чаще всего это shell-команда без <code>changed_when</code> или template, который рендерит timestamp.
+    </div>
+  </section>
+
+  <section class="note-section" id="patterns">
+    <h2><span class="num">// 17</span>Limit, tags, serial, strategy</h2>
+
+    <h3>Ограничение хостов</h3>
+<pre><code><span class="cmt"># Один хост</span>
+ansible-playbook site.yml -l web-01
+
+<span class="cmt"># Несколько групп</span>
+ansible-playbook site.yml -l <span class="str">'webservers:databases'</span>
+
+<span class="cmt"># Исключить</span>
+ansible-playbook site.yml -l <span class="str">'all:!staging'</span>
+</code></pre>
+
+    <h3>Tags</h3>
+<pre><code>- name: Install
+  apt: { name: nginx }
+  tags: [install, nginx]
+
+- name: Configure
+  template: { src: x.j2, dest: /etc/nginx.conf }
+  tags: [config, nginx]
+
+<span class="cmt"># Запуск</span>
+ansible-playbook site.yml --tags config
+ansible-playbook site.yml --skip-tags install
+ansible-playbook site.yml --list-tags
+</code></pre>
+
+    <h3>serial — rolling update</h3>
+<pre><code>- <span class="kw">hosts</span>: webservers
+  serial: 2                <span class="cmt"># по 2 хоста за раз</span>
+  max_fail_percentage: 10  <span class="cmt"># если &gt;10% упало — стоп всего play</span>
+  tasks:
+    - name: Take out of LB
+      command: lb-remove {{ inventory_hostname }}
+      delegate_to: lb-01
+    - name: Deploy
+      ...
+    - name: Health check
+      uri: { url: <span class="str">"http://{{ inventory_hostname }}/health"</span> }
+    - name: Put back to LB
+      command: lb-add {{ inventory_hostname }}
+      delegate_to: lb-01
+</code></pre>
+
+    <p><code>serial</code> можно задавать как список: <code>[1, 5, "30%"]</code> — сначала 1 хост (канарейка), потом 5, потом 30% от оставшихся.</p>
+
+    <h3>strategy</h3>
+    <ul>
+      <li><strong>linear</strong> (default) — все хосты делают task 1, потом все task 2.</li>
+      <li><strong>free</strong> — каждый хост летит вперёд независимо. Быстрее, но handlers и порядок странные.</li>
+      <li><strong>host_pinned</strong> — обработка хоста до конца перед следующим (используется с serial).</li>
+    </ul>
+
+    <h3>delegate_to / run_once</h3>
+<pre><code>- name: Run only on one host
+  command: ./global-action.sh
+  run_once: true
+  delegate_to: localhost
+</code></pre>
+  </section>
+
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Best practices и cheatsheet</h2>
+
+    <h3>10 правил продакшен-Ansible</h3>
+    <ol>
+      <li>Inventory отдельный для prod/staging. Никогда не передавайте окружение через extra-vars.</li>
+      <li>Vault для секретов всегда; пароль — не в репо.</li>
+      <li>Имя у каждого task. Без имени task — кошмар для логов.</li>
+      <li>FQCN модулей (<code>ansible.builtin.apt</code>), не короткие имена.</li>
+      <li>Идемпотентность: запускайте playbook дважды в CI — второй раз 0 changed.</li>
+      <li>Не используйте <code>shell</code> там, где есть нативный модуль.</li>
+      <li>Tags на каждом task: позволяет точечно прогонять части playbook.</li>
+      <li>Roles — для всего больше 5 tasks.</li>
+      <li>Linter: <code>ansible-lint</code> + <code>yamllint</code> в pre-commit.</li>
+      <li>Тесты ролей в Molecule (минимум — <code>create + converge + idempotence</code>).</li>
+    </ol>
+
+    <h3>Базовые команды</h3>
+<pre><code>ansible-playbook site.yml -i inventory.yml
+ansible-playbook site.yml --check --diff
+ansible-playbook site.yml -l <span class="str">'web-*'</span> --tags deploy
+ansible-playbook site.yml --start-at-task <span class="str">"Render config"</span>
+ansible-playbook site.yml --step                  <span class="cmt"># подтверждение каждого task</span>
+
+ansible all -m ping
+ansible all -m setup -a <span class="str">"filter=ansible_distribution*"</span>
+ansible-inventory --list
+ansible-inventory --graph
+
+ansible-vault create / edit / view / rekey
+ansible-galaxy collection install -r requirements.yml
+ansible-galaxy role init my_role
+ansible-config dump --only-changed
+</code></pre>
+
+    <h3>Отладка</h3>
+<pre><code>ansible-playbook site.yml -vvv                   <span class="cmt"># SSH-команды видны</span>
+ansible-playbook site.yml -vvvv                  <span class="cmt"># + connection plugin</span>
+<span class="kw">ANSIBLE_DEBUG</span>=1 ansible-playbook site.yml
+
+<span class="cmt"># Отладочный shell внутри play</span>
+- name: pause
+  ansible.builtin.pause:
+    prompt: <span class="str">"continue?"</span>
+</code></pre>
+
+    <h3>Linter</h3>
+<pre><code>pipx install ansible-lint
+ansible-lint playbooks/
+ansible-lint --offline --profile production
+</code></pre>
+
+    <h3>Molecule (TDD для ролей)</h3>
+<pre><code>cd roles/nginx
+molecule init scenario default --driver-name docker
+molecule create        <span class="cmt"># поднять контейнер</span>
+molecule converge      <span class="cmt"># применить роль</span>
+molecule idempotence   <span class="cmt"># второй прогон — 0 changed?</span>
+molecule verify        <span class="cmt"># testinfra assertions</span>
+molecule destroy
+molecule test          <span class="cmt"># весь цикл</span>
+</code></pre>
+
+    <h3>AWX / Ansible Automation Platform</h3>
+    <p>UI-обёртка над ansible-playbook: расписания, RBAC, логи, inventory sync, secrets vault. AWX — open-source. Стоит знать, но для джуниор-уровня не обязательно глубоко.</p>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/ansible$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

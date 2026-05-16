@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · CI/CD — GitHub Actions &amp; GitLab CI</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/cicd$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      CI/CD
+    </div>
+    <h1>CI/CD — <span>Actions &amp; GitLab CI</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 05</span>
+      <span>Недели 10–11 · 14 дней</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое CI/CD и зачем</a></li>
+      <li><a href="#concepts">Pipeline, job, step, stage</a></li>
+      <li><a href="#gha-workflow">GitHub Actions: workflow YAML</a></li>
+      <li><a href="#gha-triggers">Триггеры: on, события, фильтры</a></li>
+      <li><a href="#gha-jobs">Jobs, steps, actions (uses)</a></li>
+      <li><a href="#runners">Runners: hosted vs self-hosted</a></li>
+      <li><a href="#secrets">Secrets и переменные окружения</a></li>
+      <li><a href="#cache">Кэш и artifacts</a></li>
+      <li><a href="#matrix">Matrix и стратегии</a></li>
+      <li><a href="#envs">Environments и approvals</a></li>
+      <li><a href="#gitlab-yaml">GitLab CI: .gitlab-ci.yml</a></li>
+      <li><a href="#gitlab-rules">Stages, rules, needs, DAG</a></li>
+      <li><a href="#gitlab-runners">GitLab runners и executors</a></li>
+      <li><a href="#variables">Переменные и Vault</a></li>
+      <li><a href="#deploy">Стратегии деплоя</a></li>
+      <li><a href="#security">Безопасность: SAST, secrets, SBOM</a></li>
+      <li><a href="#compare">GitHub Actions vs GitLab CI</a></li>
+      <li><a href="#cheatsheet">Best practices и cheatsheet</a></li>
+    </ol>
+  </div>
+
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое CI/CD и зачем</h2>
+    <p><strong>CI (Continuous Integration)</strong> — каждый push автоматически собирается, прогоняется через тесты и линтеры. Цель: ловить поломку в первые минуты, а не на ревью через 3 дня.</p>
+    <p><strong>CD</strong> — два значения: <em>Continuous Delivery</em> (артефакт готов к деплою, кнопку нажимает человек) и <em>Continuous Deployment</em> (каждый зелёный билд автоматически едет в prod).</p>
+    <p>Pipeline превращает <code>git push</code> в цепочку: <em>build → test → security scan → package → deploy → smoke</em>. Если ломается на шаге N — следующие не выполняются, разработчик получает уведомление.</p>
+
+    <h3>Зачем DevOps это всё</h3>
+    <ul>
+      <li><strong>Скорость:</strong> релизы перестают копиться неделями.</li>
+      <li><strong>Воспроизводимость:</strong> сборка одинаковая у разработчика, в CI и в prod.</li>
+      <li><strong>Качество:</strong> тесты обязательны, иначе merge заблокирован.</li>
+      <li><strong>Аудит:</strong> любой деплой имеет лог, артефакты и коммит, который его породил.</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Контекст</div>
+      Большинство джуниор-DevOps вакансий в 2026 году требует уверенного владения <strong>хотя бы одной</strong> системой (Actions или GitLab). Если знаете Actions — GitLab разберёте за пару дней: концепции те же.
+    </div>
+  </section>
+
+  <section class="note-section" id="concepts">
+    <h2><span class="num">// 02</span>Pipeline, job, step, stage</h2>
+    <p>Четыре универсальных понятия, повторяются почти во всех CI-системах (Actions, GitLab, Jenkins, CircleCI, Drone).</p>
+
+    <table class="compare">
+      <thead><tr><th>Уровень</th><th>Описание</th><th>GitHub Actions</th><th>GitLab CI</th></tr></thead>
+      <tbody>
+        <tr><td>Pipeline / Workflow</td><td>Весь сценарий целиком</td><td><code>workflow</code> (один YAML-файл)</td><td><code>pipeline</code> (один файл <code>.gitlab-ci.yml</code>)</td></tr>
+        <tr><td>Stage</td><td>Логическая фаза: build, test, deploy</td><td>—  (используется <code>needs</code>)</td><td><code>stages:</code> явный список</td></tr>
+        <tr><td>Job</td><td>Единица работы — запускается на runner</td><td><code>jobs.&lt;id&gt;</code></td><td><code>&lt;job-name&gt;:</code></td></tr>
+        <tr><td>Step</td><td>Команда внутри job</td><td><code>steps:</code> массив</td><td><code>script:</code> массив</td></tr>
+      </tbody>
+    </table>
+
+    <p>Jobs одного stage <strong>параллельны</strong>, jobs разных stages — <strong>последовательны</strong>. Steps внутри job всегда последовательны.</p>
+
+    <h3>Жизненный цикл одной job</h3>
+    <ol>
+      <li>Triggers сработали (push / MR / cron).</li>
+      <li>CI-сервер планирует job → выбирает свободный runner.</li>
+      <li>Runner клонирует репо, восстанавливает кэш.</li>
+      <li>Выполняет steps в порядке объявления.</li>
+      <li>Сохраняет artifacts, отправляет логи, помечает успех/провал.</li>
+    </ol>
+  </section>
+
+  <section class="note-section" id="gha-workflow">
+    <h2><span class="num">// 03</span>GitHub Actions: workflow YAML</h2>
+    <p>Workflows лежат в <code>.github/workflows/*.yml</code>. Один файл — один workflow. Имя файла произвольное; имя в UI — поле <code>name:</code>.</p>
+
+<pre><code><span class="cmt"># .github/workflows/ci.yml</span>
+<span class="kw">name</span>: CI
+<span class="kw">on</span>:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+<span class="kw">jobs</span>:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: <span class="str">'20'</span>
+          cache: <span class="str">'npm'</span>
+      - run: npm ci
+      - run: npm test
+</code></pre>
+
+    <h3>Скелет workflow</h3>
+    <ul>
+      <li><code>name</code> — отображаемое имя workflow.</li>
+      <li><code>on</code> — триггеры (push, PR, schedule, workflow_dispatch, manual).</li>
+      <li><code>env</code> — глобальные переменные.</li>
+      <li><code>jobs</code> — словарь jobs.</li>
+      <li><code>permissions</code> — разрешения <code>GITHUB_TOKEN</code> для job.</li>
+      <li><code>concurrency</code> — групп для отмены устаревших запусков.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Совет</div>
+      Всегда указывайте <code>permissions:</code> на уровне workflow. По умолчанию токен получает write-доступ ко всему. Принцип <em>least privilege</em>: <code>contents: read</code> и точечно повышать там, где нужно.
+    </div>
+  </section>
+
+  <section class="note-section" id="gha-triggers">
+    <h2><span class="num">// 04</span>Триггеры: on, события, фильтры</h2>
+    <p><code>on:</code> может быть строкой, списком или объектом. Чаще всего — объект, потому что нужны фильтры.</p>
+
+<pre><code><span class="kw">on</span>:
+  push:
+    branches: [main]
+    tags: [<span class="str">'v*'</span>]
+    paths-ignore: [<span class="str">'docs/**'</span>, <span class="str">'*.md'</span>]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: <span class="str">'0 2 * * *'</span>          <span class="cmt"># каждый день в 02:00 UTC</span>
+  workflow_dispatch:               <span class="cmt"># ручной запуск из UI</span>
+    inputs:
+      environment:
+        type: choice
+        options: [staging, production]
+  workflow_call:                   <span class="cmt"># вызов из другого workflow</span>
+</code></pre>
+
+    <h3>Самые полезные события</h3>
+    <ul>
+      <li><strong>push</strong> — каждый коммит в указанные ветки/теги.</li>
+      <li><strong>pull_request</strong> — открытие, обновление, закрытие MR. По умолчанию использует <em>merge commit</em>, что точнее.</li>
+      <li><strong>schedule</strong> — cron (UTC). Только в default-ветке.</li>
+      <li><strong>workflow_dispatch</strong> — кнопка в UI с инпутами.</li>
+      <li><strong>workflow_call</strong> — переиспользование workflow как функции.</li>
+      <li><strong>release</strong> — публикация GitHub release.</li>
+    </ul>
+
+    <h3>Concurrency: отмена устаревших запусков</h3>
+<pre><code><span class="kw">concurrency</span>:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+</code></pre>
+    <p>Если разработчик пушит дважды подряд — первый run отменяется. Экономит минуты и не путает статусы в PR.</p>
+  </section>
+
+  <section class="note-section" id="gha-jobs">
+    <h2><span class="num">// 05</span>Jobs, steps, actions (uses)</h2>
+    <p><code>jobs</code> — словарь, ключ — ID job. Каждая job — изолированная виртуалка (или контейнер).</p>
+
+<pre><code><span class="kw">jobs</span>:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: echo <span class="str">"version=$(cat VERSION)"</span> &gt;&gt; <span class="str">"$GITHUB_OUTPUT"</span>
+
+  deploy:
+    needs: build                          <span class="cmt"># ждёт build</span>
+    runs-on: ubuntu-latest
+    if: github.ref == <span class="str">'refs/heads/main'</span>
+    steps:
+      - run: echo <span class="str">"deploying ${{ needs.build.outputs.version }}"</span>
+</code></pre>
+
+    <h3>Два типа steps</h3>
+    <ul>
+      <li><strong>run:</strong> — произвольная shell-команда.</li>
+      <li><strong>uses:</strong> — переиспользуемый action (из marketplace или своего репо).</li>
+    </ul>
+
+    <h3>Полезные built-in actions</h3>
+    <ul>
+      <li><code>actions/checkout@v4</code> — клон репо. Без него <code>$GITHUB_WORKSPACE</code> пустой.</li>
+      <li><code>actions/setup-node|python|go|java@v4</code> — установка toolchain + кэш.</li>
+      <li><code>actions/cache@v4</code> — произвольный кэш по ключу.</li>
+      <li><code>actions/upload-artifact@v4</code> / <code>download-artifact@v4</code> — обмен файлами между job.</li>
+      <li><code>docker/build-push-action@v5</code> — buildx + push в registry.</li>
+      <li><code>docker/login-action@v3</code> — логин в registry.</li>
+    </ul>
+
+    <h3>Версионирование actions</h3>
+    <p>Привязывайте к major-тегу (<code>@v4</code>) или SHA. <code>@main</code> — приглашение supply-chain атаки. SHA — самый безопасный вариант для security-критичного pipeline:</p>
+<pre><code>- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+</code></pre>
+  </section>
+
+  <section class="note-section" id="runners">
+    <h2><span class="num">// 06</span>Runners: hosted vs self-hosted</h2>
+    <p>Runner — машина (VM, контейнер, физическая), на которой исполняется job.</p>
+
+    <table class="compare">
+      <thead><tr><th></th><th>GitHub-hosted</th><th>Self-hosted</th></tr></thead>
+      <tbody>
+        <tr><td>Где живёт</td><td>VM от GitHub (Azure)</td><td>Ваша VM/железо/k8s</td></tr>
+        <tr><td>Стоимость</td><td>2000 мин/мес бесплатно для приватных</td><td>Только ваша инфра</td></tr>
+        <tr><td>Чистота</td><td>Каждая job — fresh VM</td><td>Job выполняются на одной машине, нужно чистить</td></tr>
+        <tr><td>Скорость</td><td>~30 сек на старт</td><td>~1 сек, кэши горячие</td></tr>
+        <tr><td>Доступ к внутренней сети</td><td>Нет</td><td>Есть (для деплоя в prod)</td></tr>
+        <tr><td>Ось</td><td>ubuntu / windows / macos</td><td>Любая</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Установка self-hosted runner</h3>
+<pre><code><span class="cmt"># Settings → Actions → Runners → New self-hosted runner</span>
+mkdir actions-runner &amp;&amp; cd actions-runner
+curl -O -L https://github.com/actions/runner/releases/download/v2.X/actions-runner-linux-x64.tar.gz
+tar xzf actions-runner-linux-x64.tar.gz
+./config.sh --url https://github.com/ORG/REPO --token TOKEN
+sudo ./svc.sh install &amp;&amp; sudo ./svc.sh start
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Внимание</div>
+      Self-hosted runners в публичных репах — <strong>опасно</strong>. Любой PR от форка может выполнить произвольный код на вашей машине. Для публичных репозиториев используйте только GitHub-hosted либо требуйте approve.
+    </div>
+
+    <h3>Labels</h3>
+    <p>Runner может иметь метки (<code>self-hosted</code>, <code>linux</code>, <code>gpu</code>). В job выбираете нужные:</p>
+<pre><code>runs-on: [self-hosted, linux, gpu]
+</code></pre>
+  </section>
+
+  <section class="note-section" id="secrets">
+    <h2><span class="num">// 07</span>Secrets и переменные окружения</h2>
+    <p>Три уровня секретов в GitHub:</p>
+    <ul>
+      <li><strong>Repository secrets</strong> — на репо.</li>
+      <li><strong>Environment secrets</strong> — привязаны к environment (production/staging).</li>
+      <li><strong>Organization secrets</strong> — общие для нескольких репо.</li>
+    </ul>
+
+<pre><code><span class="kw">jobs</span>:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production           <span class="cmt"># подгрузит env secrets</span>
+    steps:
+      - run: ./deploy.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
+</code></pre>
+
+    <h3>Контексты и доступ</h3>
+    <ul>
+      <li><code>secrets.X</code> — секреты.</li>
+      <li><code>vars.X</code> — обычные переменные (видны в логах).</li>
+      <li><code>env.X</code> — env, объявленный в YAML.</li>
+      <li><code>github.X</code> — метаданные события (sha, ref, actor).</li>
+      <li><code>runner.X</code> — инфо о runner.</li>
+    </ul>
+
+    <h3>OIDC: keyless-аутентификация</h3>
+    <p>Современный способ деплоя в AWS/GCP/Azure — <strong>без долгоживущих ключей</strong>. Workflow получает JWT от GitHub, обменивает на STS-токен:</p>
+<pre><code>- uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: arn:aws:iam::123:role/gh-deploy
+    aws-region: us-east-1
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Best practice</div>
+      Любой долгоживущий <code>AWS_SECRET_ACCESS_KEY</code> в секретах — повод для разговора с командой. OIDC безопаснее, потому что токен живёт минуты, а не годы.
+    </div>
+
+    <h3>Маскирование</h3>
+    <p>GitHub автоматически маскирует значения secrets в логах (<code>***</code>). Но если вы их сделаете base64 или транформируете — маска сломается. Для пользовательских значений:</p>
+<pre><code>echo <span class="str">"::add-mask::$DERIVED_TOKEN"</span>
+</code></pre>
+  </section>
+
+  <section class="note-section" id="cache">
+    <h2><span class="num">// 08</span>Кэш и artifacts</h2>
+    <p>Два разных механизма, путать <strong>нельзя</strong>:</p>
+
+    <table class="compare">
+      <thead><tr><th></th><th>Cache</th><th>Artifact</th></tr></thead>
+      <tbody>
+        <tr><td>Зачем</td><td>Ускорить сборку (deps, build cache)</td><td>Передать файл между jobs / выгрузить наружу</td></tr>
+        <tr><td>Время жизни</td><td>7 дней без обращения, потом удаляется</td><td>90 дней (настраивается)</td></tr>
+        <tr><td>Размер</td><td>Лимит 10 GB на репо</td><td>Без жёсткого лимита, но платно</td></tr>
+        <tr><td>Доступ</td><td>Только из workflow</td><td>Можно скачать через UI/API</td></tr>
+        <tr><td>Ключ</td><td><code>key + restore-keys</code></td><td>Имя</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cache</h3>
+<pre><code>- uses: actions/cache@v4
+  with:
+    path: |
+      ~/.npm
+      node_modules
+    key: ${{ runner.os }}-npm-${{ hashFiles(<span class="str">'**/package-lock.json'</span>) }}
+    restore-keys: |
+      ${{ runner.os }}-npm-
+</code></pre>
+    <p>Логика: ищет точный <code>key</code> → если нет, пробует <code>restore-keys</code> по префиксу → если ничего, начинает с нуля. В конце job сохраняет под <code>key</code>.</p>
+
+    <h3>Artifacts</h3>
+<pre><code><span class="cmt"># job build</span>
+- uses: actions/upload-artifact@v4
+  with:
+    name: dist
+    path: dist/
+    retention-days: 7
+
+<span class="cmt"># job deploy</span>
+- uses: actions/download-artifact@v4
+  with:
+    name: dist
+    path: dist/
+</code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// Подводный камень</div>
+      <code>setup-node@v4</code> с <code>cache: npm</code> сам управляет кэшем — не нужно дублировать <code>actions/cache</code>. Аналогично для setup-python, setup-go.
+    </div>
+  </section>
+
+  <section class="note-section" id="matrix">
+    <h2><span class="num">// 09</span>Matrix и стратегии</h2>
+    <p>Matrix — способ запустить одну job N раз с разными параметрами параллельно.</p>
+
+<pre><code><span class="kw">jobs</span>:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false             <span class="cmt"># не отменять остальные при первом провале</span>
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [<span class="str">'18'</span>, <span class="str">'20'</span>, <span class="str">'22'</span>]
+        exclude:
+          - os: windows-latest
+            node: <span class="str">'18'</span>
+        include:                   <span class="cmt"># добавить экстра-комбинацию</span>
+          - os: ubuntu-latest
+            node: <span class="str">'21'</span>
+            experimental: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: <span class="str">'${{ matrix.node }}'</span> }
+      - run: npm test
+</code></pre>
+
+    <h3>Когда использовать</h3>
+    <ul>
+      <li>Тесты на нескольких версиях runtime (Node 18/20/22).</li>
+      <li>Сборка под разные OS / архитектуры.</li>
+      <li>Один и тот же сценарий для разных микросервисов.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Совет</div>
+      <code>fail-fast: false</code> — почти всегда то, что вам нужно. Иначе провал одной комбо (например Windows + Node 18) отменит результаты всех остальных, и вы не узнаете, что упало на macOS.
+    </div>
+  </section>
+
+  <section class="note-section" id="envs">
+    <h2><span class="num">// 10</span>Environments и approvals</h2>
+    <p>Environment — именованная цель деплоя (staging, production). В UI: <em>Settings → Environments</em>. Что даёт:</p>
+    <ul>
+      <li><strong>Required reviewers</strong> — job не стартует, пока человек не нажмёт Approve.</li>
+      <li><strong>Wait timer</strong> — задержка перед стартом (например, 10 мин).</li>
+      <li><strong>Deployment branches</strong> — деплой только из main/release.</li>
+      <li><strong>Environment secrets</strong> — переопределяют repo-secrets.</li>
+      <li><strong>URL</strong> — отображается в Deployments tab после успеха.</li>
+    </ul>
+
+<pre><code>deploy-prod:
+  needs: build
+  runs-on: ubuntu-latest
+  environment:
+    name: production
+    url: https://app.example.com
+  steps:
+    - run: ./deploy.sh
+</code></pre>
+
+    <h3>Reusable workflow + environment</h3>
+<pre><code><span class="cmt"># .github/workflows/deploy.yml — переиспользуемый</span>
+<span class="kw">on</span>:
+  workflow_call:
+    inputs:
+      env:
+        type: string
+        required: true
+
+<span class="kw">jobs</span>:
+  go:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.env }}
+    steps:
+      - run: ./deploy.sh
+</code></pre>
+  </section>
+
+  <section class="note-section" id="gitlab-yaml">
+    <h2><span class="num">// 11</span>GitLab CI: .gitlab-ci.yml</h2>
+    <p>Файл лежит в корне репо. GitLab его читает, валидирует, создаёт pipeline.</p>
+
+<pre><code><span class="cmt"># .gitlab-ci.yml</span>
+<span class="kw">stages</span>:
+  - build
+  - test
+  - deploy
+
+<span class="kw">variables</span>:
+  POSTGRES_DB: app_test
+
+<span class="kw">default</span>:
+  image: node:20-alpine
+  tags: [docker]
+  before_script:
+    - npm ci
+
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths: [dist/]
+    expire_in: 1 week
+
+test:
+  stage: test
+  script:
+    - npm test
+
+deploy:prod:
+  stage: deploy
+  script:
+    - ./deploy.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == <span class="str">"main"</span>
+  environment:
+    name: production
+    url: https://app.example.com
+  when: manual
+</code></pre>
+
+    <h3>Ключевые блоки</h3>
+    <ul>
+      <li><code>stages:</code> — упорядоченный список фаз.</li>
+      <li><code>variables:</code> — глобальные переменные.</li>
+      <li><code>default:</code> — настройки, наследуемые всеми job.</li>
+      <li><code>image:</code> — docker-образ для исполнения.</li>
+      <li><code>tags:</code> — выбор runner по меткам.</li>
+      <li><code>before_script / after_script</code> — общие команды до/после <code>script</code>.</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Анатомия job</div>
+      Имя job произвольное; двоеточие в имени (<code>deploy:prod</code>) — лишь визуальная группировка в UI, не семантика.
+    </div>
+  </section>
+
+  <section class="note-section" id="gitlab-rules">
+    <h2><span class="num">// 12</span>Stages, rules, needs, DAG</h2>
+
+    <h3>rules — современный способ условий</h3>
+    <p><code>only/except</code> устарели — используйте <code>rules</code>:</p>
+<pre><code>deploy:
+  stage: deploy
+  script: ./deploy.sh
+  rules:
+    - if: <span class="str">'$CI_PIPELINE_SOURCE == "merge_request_event"'</span>
+      when: never
+    - if: <span class="str">'$CI_COMMIT_TAG'</span>
+      when: on_success
+    - if: <span class="str">'$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'</span>
+      changes:
+        - app/**/*
+      when: manual
+    - when: never                  <span class="cmt"># явный default</span>
+</code></pre>
+
+    <h3>needs — DAG вместо stages</h3>
+    <p>По умолчанию job ждёт <em>все</em> job предыдущего stage. <code>needs:</code> создаёт точный граф зависимостей — job стартует, как только указанные job завершились:</p>
+<pre><code>e2e:
+  stage: test
+  needs: [<span class="str">"build:frontend"</span>, <span class="str">"build:backend"</span>]
+  script: ./e2e.sh
+</code></pre>
+    <p>Это критично для скорости: 8-минутный pipeline превращается в 3-минутный.</p>
+
+    <h3>Полезные предопределённые переменные</h3>
+    <ul>
+      <li><code>CI_COMMIT_SHA</code> / <code>CI_COMMIT_SHORT_SHA</code></li>
+      <li><code>CI_COMMIT_BRANCH</code> / <code>CI_COMMIT_TAG</code></li>
+      <li><code>CI_PIPELINE_SOURCE</code> — push / merge_request_event / schedule / web</li>
+      <li><code>CI_MERGE_REQUEST_IID</code></li>
+      <li><code>CI_PROJECT_DIR</code> — рабочая директория</li>
+      <li><code>CI_REGISTRY</code> / <code>CI_REGISTRY_IMAGE</code> — встроенный registry</li>
+      <li><code>CI_JOB_TOKEN</code> — короткоживущий токен для API</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="gitlab-runners">
+    <h2><span class="num">// 13</span>GitLab runners и executors</h2>
+    <p>Runner — отдельный демон, регистрируется в GitLab токеном. Job исполняет через <strong>executor</strong>:</p>
+
+    <table class="compare">
+      <thead><tr><th>Executor</th><th>Где запускает job</th><th>Когда использовать</th></tr></thead>
+      <tbody>
+        <tr><td>shell</td><td>На самом runner (как root/gitlab-runner)</td><td>Доверенный окружение, нужна локальная файл-система</td></tr>
+        <tr><td>docker</td><td>В контейнере из <code>image:</code></td><td>Самый частый — изоляция + чистота</td></tr>
+        <tr><td>docker-machine</td><td>Автоскейлинг через docker-machine</td><td>Устарел, не используйте</td></tr>
+        <tr><td>kubernetes</td><td>Каждая job — Pod в k8s</td><td>Большие команды, эластичная инфра</td></tr>
+        <tr><td>ssh</td><td>По SSH на удалённую машину</td><td>Legacy, редко</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Установка</h3>
+<pre><code><span class="cmt"># Debian/Ubuntu</span>
+curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
+sudo apt-get install gitlab-runner
+
+<span class="cmt"># Регистрация</span>
+sudo gitlab-runner register \
+  --url https://gitlab.example.com \
+  --token YOUR_TOKEN \
+  --executor docker \
+  --docker-image alpine:latest
+</code></pre>
+
+    <h3>config.toml — основной конфиг</h3>
+<pre><code>concurrent = 4
+[[runners]]
+  name = <span class="str">"docker-runner"</span>
+  url = <span class="str">"https://gitlab.example.com"</span>
+  token = <span class="str">"..."</span>
+  executor = <span class="str">"docker"</span>
+  [runners.docker]
+    image = <span class="str">"alpine:latest"</span>
+    privileged = false
+    volumes = [<span class="str">"/cache"</span>, <span class="str">"/var/run/docker.sock:/var/run/docker.sock"</span>]
+  [runners.cache]
+    Type = <span class="str">"s3"</span>
+    Shared = true
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Безопасность</div>
+      <code>privileged = true</code> + <code>/var/run/docker.sock</code> = root на хосте из job. Для public-репо — катастрофа. Для приватного — взвешенно, лучше использовать <code>kaniko</code> или <code>buildah rootless</code>.
+    </div>
+  </section>
+
+  <section class="note-section" id="variables">
+    <h2><span class="num">// 14</span>Переменные и Vault</h2>
+
+    <h3>GitLab CI/CD variables</h3>
+    <p><em>Settings → CI/CD → Variables</em>. Три флага:</p>
+    <ul>
+      <li><strong>Protected</strong> — видны только в job из protected ветки/тега.</li>
+      <li><strong>Masked</strong> — скрыты в логах (значение должно быть base64-подобным, &gt;8 символов).</li>
+      <li><strong>Expand</strong> — раскрывать <code>$OTHER_VAR</code> внутри значения.</li>
+    </ul>
+
+    <h3>File-type variables</h3>
+    <p>Тип <em>File</em> — значение записывается во временный файл, переменная содержит путь. Идеально для kubeconfig / .env / ключей:</p>
+<pre><code>deploy:
+  script:
+    - cp $KUBECONFIG ~/.kube/config
+    - kubectl apply -f deploy.yml
+</code></pre>
+
+    <h3>Vault интеграция (GitLab Premium)</h3>
+<pre><code>job:
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: https://vault.example.com
+  secrets:
+    DB_PASSWORD:
+      vault: prod/db@apps
+      token: $VAULT_ID_TOKEN
+  script:
+    - echo <span class="str">"connecting with $DB_PASSWORD"</span>
+</code></pre>
+    <p>JWT → Vault → секрет на лету, без хранения в GitLab.</p>
+
+    <h3>Эквивалент в Actions</h3>
+    <p><code>vars.X</code> (открытые), <code>secrets.X</code> (зашифрованные), <code>environment.secrets</code>, OIDC к AWS/GCP/Vault. Логика та же.</p>
+  </section>
+
+  <section class="note-section" id="deploy">
+    <h2><span class="num">// 15</span>Стратегии деплоя</h2>
+    <p>CI собирает артефакт, CD его раскатывает. Выбор стратегии — компромисс между риском и сложностью.</p>
+
+    <table class="compare">
+      <thead><tr><th>Стратегия</th><th>Как работает</th><th>Откат</th><th>Когда</th></tr></thead>
+      <tbody>
+        <tr><td>Recreate</td><td>Остановить старое, поднять новое</td><td>Поднять старое</td><td>Dev / single-instance</td></tr>
+        <tr><td>Rolling</td><td>Постепенно заменять pod'ы / инстансы</td><td>Откатить deployment</td><td>Default для k8s, безопасно</td></tr>
+        <tr><td>Blue/Green</td><td>Полная новая стэк рядом, переключение трафика</td><td>Переключить обратно</td><td>Низкий tolerance к downtime</td></tr>
+        <tr><td>Canary</td><td>5% → 25% → 100% трафика на новую версию</td><td>Снять процент</td><td>Большой риск, нужны метрики</td></tr>
+        <tr><td>Shadow</td><td>Зеркалирование запросов без ответа</td><td>—</td><td>Тест производительности</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Скелет deploy job (GitLab + k8s)</h3>
+<pre><code>deploy:staging:
+  stage: deploy
+  image: bitnami/kubectl:1.29
+  script:
+    - kubectl set image deployment/app app=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -n staging
+    - kubectl rollout status deployment/app -n staging --timeout=5m
+  environment:
+    name: staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == <span class="str">"develop"</span>
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило</div>
+      Любой деплой должен иметь <strong>smoke-тест</strong> сразу после раскатки. Если health-check вернул 500 — pipeline должен упасть, а deployment автоматически откатиться. <code>kubectl rollout status</code> + <code>--timeout</code> делает это бесплатно.
+    </div>
+  </section>
+
+  <section class="note-section" id="security">
+    <h2><span class="num">// 16</span>Безопасность: SAST, secrets, SBOM</h2>
+
+    <h3>Что встраивать в pipeline</h3>
+    <ul>
+      <li><strong>Secret scanning</strong> — поиск утечек в коде. Инструменты: <code>gitleaks</code>, <code>trufflehog</code>.</li>
+      <li><strong>SAST</strong> (Static Application Security Testing) — анализ исходников. <code>semgrep</code>, <code>bandit</code> (Python), <code>brakeman</code> (Ruby), GitLab built-in.</li>
+      <li><strong>SCA</strong> (Software Composition Analysis) — уязвимости в зависимостях. <code>npm audit</code>, <code>pip-audit</code>, <code>dependency-check</code>, Dependabot, Renovate.</li>
+      <li><strong>Container scan</strong> — <code>trivy</code>, <code>grype</code>. Гонится после docker build.</li>
+      <li><strong>IaC scan</strong> — <code>checkov</code>, <code>tfsec</code> для Terraform.</li>
+      <li><strong>SBOM</strong> — список компонентов. <code>syft</code> генерирует, <code>grype</code> проверяет.</li>
+    </ul>
+
+<pre><code>scan:
+  stage: test
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --exit-code 1 --severity HIGH,CRITICAL $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - trivy fs --exit-code 0 --format sarif -o report.sarif .
+  artifacts:
+    paths: [report.sarif]
+</code></pre>
+
+    <h3>Supply chain: pinning</h3>
+    <ul>
+      <li>Actions — pin на SHA, не на тег.</li>
+      <li>Docker base images — на digest <code>node@sha256:...</code>.</li>
+      <li>Lock-файлы (<code>package-lock.json</code>, <code>poetry.lock</code>) — обязательны в репо.</li>
+      <li><code>--frozen-lockfile</code> / <code>npm ci</code> вместо <code>npm install</code>.</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-label">// Реальный кейс</div>
+      В 2024 компрометировали популярный action <code>tj-actions/changed-files</code> — атакующий записал свои команды в тег v45.0.7. Все, кто использовал <code>@v45</code>, неделю отправляли секреты на сторонний сервер. SHA-pinning такое предотвращает.
+    </div>
+  </section>
+
+  <section class="note-section" id="compare">
+    <h2><span class="num">// 17</span>GitHub Actions vs GitLab CI</h2>
+
+    <table class="compare">
+      <thead><tr><th>Аспект</th><th>GitHub Actions</th><th>GitLab CI</th></tr></thead>
+      <tbody>
+        <tr><td>Файл</td><td><code>.github/workflows/*.yml</code> (много)</td><td><code>.gitlab-ci.yml</code> (один + includes)</td></tr>
+        <tr><td>Reuse</td><td><code>workflow_call</code>, composite actions</td><td><code>include:</code>, <code>extends:</code>, шаблоны</td></tr>
+        <tr><td>DAG</td><td><code>needs:</code> между jobs</td><td><code>needs:</code> между jobs</td></tr>
+        <tr><td>Marketplace</td><td>Огромный (десятки тысяч actions)</td><td>Скромный, чаще пишут свои</td></tr>
+        <tr><td>Cache</td><td>Встроенный, по ключу</td><td>Встроенный, по ключу + S3 для shared</td></tr>
+        <tr><td>Container registry</td><td>ghcr.io</td><td>Встроенный, привязан к проекту</td></tr>
+        <tr><td>K8s-нативность</td><td>Через action</td><td>Auto DevOps, k8s integrations</td></tr>
+        <tr><td>Self-hosted runners</td><td>Бесплатно</td><td>Бесплатно</td></tr>
+        <tr><td>Free tier</td><td>2000 мин/мес для private</td><td>400 мин/мес SaaS, безлимит self-hosted</td></tr>
+        <tr><td>Security tier</td><td>Advanced Security (платно)</td><td>SAST/DAST/secret/license — в Ultimate</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Какой выбирать?</h3>
+    <ul>
+      <li>Код на GitHub → берите Actions, не плодите сущности.</li>
+      <li>Self-hosted git + on-premise — GitLab сильнее (всё-в-одном, включая registry, k8s, мониторинг pipeline).</li>
+      <li>На рынке РФ — GitLab чаще встречается (self-hosted на серверах компании). Учите оба.</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Best practices и cheatsheet</h2>
+
+    <h3>10 правил, которые сэкономят неделю на ревью</h3>
+    <ol>
+      <li>Один workflow / один файл = одна цель (CI отдельно от деплоя).</li>
+      <li>Pin actions/images на SHA или digest, минимум — на major.</li>
+      <li>Минимальные permissions (<code>contents: read</code>), повышать точечно.</li>
+      <li><code>fail-fast: false</code> для matrix, чтобы видеть все провалы.</li>
+      <li><code>concurrency.cancel-in-progress: true</code> — экономит минуты.</li>
+      <li>OIDC вместо долгоживущих ключей.</li>
+      <li>Используйте кэш, но проверяйте, что он действительно ускоряет (метрика — wall-time).</li>
+      <li>Все деплои — через <code>environment</code> с обязательным approval для prod.</li>
+      <li>Smoke-тесты обязательны после деплоя.</li>
+      <li>Pipeline должен падать на security-issue <code>HIGH/CRITICAL</code>, иначе сканеры — декорация.</li>
+    </ol>
+
+    <h3>GitHub Actions — мини-шпаргалка</h3>
+<pre><code><span class="cmt"># Запустить workflow вручную через CLI</span>
+<span class="kw">gh</span> workflow run ci.yml -f environment=staging
+<span class="kw">gh</span> run list --workflow=ci.yml
+<span class="kw">gh</span> run view RUN_ID --log
+<span class="kw">gh</span> run rerun RUN_ID --failed
+
+<span class="cmt"># Локальный запуск (act)</span>
+<span class="kw">act</span> push -j test
+</code></pre>
+
+    <h3>GitLab CI — мини-шпаргалка</h3>
+<pre><code><span class="cmt"># Локальная проверка синтаксиса</span>
+<span class="kw">glab</span> ci lint
+<span class="kw">glab</span> ci view
+
+<span class="cmt"># Запуск job локально (требует gitlab-runner)</span>
+<span class="kw">gitlab-runner</span> exec docker test
+
+<span class="cmt"># Конкретный pipeline</span>
+<span class="kw">glab</span> ci status
+<span class="kw">glab</span> ci trace JOB_ID
+</code></pre>
+
+    <h3>Шаблон reusable workflow (Actions)</h3>
+<pre><code><span class="cmt"># .github/workflows/_build.yml</span>
+<span class="kw">on</span>:
+  workflow_call:
+    inputs:
+      node-version: { type: string, default: <span class="str">'20'</span> }
+    outputs:
+      sha:
+        value: ${{ jobs.build.outputs.sha }}
+<span class="kw">jobs</span>:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.s.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: s
+        run: echo <span class="str">"sha=$(git rev-parse --short HEAD)"</span> &gt;&gt; <span class="str">"$GITHUB_OUTPUT"</span>
+</code></pre>
+
+    <h3>Шаблон include (GitLab)</h3>
+<pre><code><span class="kw">include</span>:
+  - project: <span class="str">"templates/ci"</span>
+    file: <span class="str">"/jobs/docker-build.yml"</span>
+    ref: main
+  - local: <span class="str">"/ci/deploy.yml"</span>
+  - template: <span class="str">"Security/SAST.gitlab-ci.yml"</span>
+</code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/cicd$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

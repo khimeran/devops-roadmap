@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Kubernetes — Базовый уровень</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/kubernetes$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Kubernetes
+    </div>
+    <h1>Kubernetes — <span>Базовый уровень</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 09</span>
+      <span>Недели 19–22 · 28 дней</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое Kubernetes и зачем</a></li>
+      <li><a href="#arch">Архитектура: control plane и nodes</a></li>
+      <li><a href="#objects">Объекты, манифесты, declarative</a></li>
+      <li><a href="#pod">Pod — атомарная единица</a></li>
+      <li><a href="#workloads">Deployment, StatefulSet, DaemonSet, Job</a></li>
+      <li><a href="#services">Services и kube-proxy</a></li>
+      <li><a href="#ingress">Ingress и Gateway API</a></li>
+      <li><a href="#config">ConfigMap, Secret, env</a></li>
+      <li><a href="#storage">Volumes, PV, PVC, StorageClass</a></li>
+      <li><a href="#resources">Resources, requests, limits, QoS</a></li>
+      <li><a href="#probes">Probes: liveness, readiness, startup</a></li>
+      <li><a href="#sched">Scheduling: nodeSelector, affinity, taints</a></li>
+      <li><a href="#rbac">RBAC, ServiceAccount, NetworkPolicy</a></li>
+      <li><a href="#helm">Helm и Kustomize</a></li>
+      <li><a href="#operators">Operators и CRD</a></li>
+      <li><a href="#debug">Диагностика и kubectl recipes</a></li>
+      <li><a href="#prod">Prod чек-лист</a></li>
+      <li><a href="#cheatsheet">Cheatsheet</a></li>
+    </ol>
+  </div>
+
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое Kubernetes и зачем</h2>
+    <p><strong>Kubernetes (K8s)</strong> — оркестратор контейнеров. Описываете «как должно быть» — он сам поддерживает это состояние.</p>
+
+    <h3>Что даёт</h3>
+    <ul>
+      <li><strong>Self-healing</strong> — упавшие контейнеры перезапускаются автоматически.</li>
+      <li><strong>Horizontal scaling</strong> — увеличить replicas одной командой / по метрике.</li>
+      <li><strong>Service discovery</strong> — внутренний DNS, балансировка.</li>
+      <li><strong>Rolling updates</strong> — обновление без downtime, откат.</li>
+      <li><strong>Resource management</strong> — bin-packing подов на ноды.</li>
+      <li><strong>Декларативность</strong> — git как источник истины.</li>
+    </ul>
+
+    <h3>Когда не Kubernetes</h3>
+    <ul>
+      <li>Маленький стартап с 1–3 сервисами — Docker Compose + один VPS дешевле и проще.</li>
+      <li>Stateful монолит на 1 хосте — overkill.</li>
+      <li>Команда без операционных навыков — K8s сам по себе — целая профессия.</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Контекст 2026</div>
+      Базовый K8s сейчас встречается практически в каждой второй DevOps-вакансии. Не обязательно уметь поднять кластер с нуля — но <em>читать манифесты, дебажить pods, писать Helm-чарты</em> требуют от джуниоров.
+    </div>
+  </section>
+
+  <section class="note-section" id="arch">
+    <h2><span class="num">// 02</span>Архитектура: control plane и nodes</h2>
+
+    <h3>Control plane</h3>
+    <ul>
+      <li><strong>kube-apiserver</strong> — единственная точка входа. REST/JSON, валидирует и пишет в etcd.</li>
+      <li><strong>etcd</strong> — распределённое KV-хранилище. <em>Источник истины</em> кластера. Raft. Бэкап etcd = бэкап кластера.</li>
+      <li><strong>kube-scheduler</strong> — решает, на какую ноду посадить новый Pod.</li>
+      <li><strong>kube-controller-manager</strong> — крутит controller'ы (Deployment, Job, NodeController...).</li>
+      <li><strong>cloud-controller-manager</strong> — интеграция с облаком (LoadBalancer, IP, volumes).</li>
+    </ul>
+
+    <h3>Worker node</h3>
+    <ul>
+      <li><strong>kubelet</strong> — агент, общается с apiserver, запускает контейнеры через CRI.</li>
+      <li><strong>kube-proxy</strong> — настраивает iptables/IPVS для Service.</li>
+      <li><strong>Container runtime</strong> — containerd (default), CRI-O. Docker dockershim удалён с 1.24.</li>
+    </ul>
+
+    <h3>Поток создания Pod</h3>
+    <ol>
+      <li><code>kubectl apply</code> → apiserver валидирует и пишет в etcd (status: Pending).</li>
+      <li>Scheduler видит Pod без node, выбирает ноду по фильтрам/скорам, обновляет <code>nodeName</code>.</li>
+      <li>kubelet нужной ноды видит «свой» Pod, тянет образ через CRI, запускает контейнеры.</li>
+      <li>kubelet репортит status обратно в apiserver.</li>
+    </ol>
+
+    <table class="compare">
+      <thead><tr><th>Дистрибутив</th><th>Для чего</th></tr></thead>
+      <tbody>
+        <tr><td>kubeadm</td><td>Bare-metal/VM, "правильный" путь</td></tr>
+        <tr><td>k3s</td><td>Лёгкий single-binary, edge, маленькие кластеры</td></tr>
+        <tr><td>minikube / kind</td><td>Локально для разработки</td></tr>
+        <tr><td>EKS / GKE / AKS</td><td>Managed cloud</td></tr>
+        <tr><td>OpenShift</td><td>Red Hat enterprise (RH OCP)</td></tr>
+        <tr><td>Deckhouse / Cozystack</td><td>Российские managed-альтернативы</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="note-section" id="objects">
+    <h2><span class="num">// 03</span>Объекты, манифесты, declarative</h2>
+    <p>Всё в K8s — объект (Pod, Service, ConfigMap...). Описывается YAML или JSON. Структура:</p>
+
+<pre><code><span class="kw">apiVersion</span>: apps/v1
+<span class="kw">kind</span>: Deployment
+<span class="kw">metadata</span>:
+  name: web
+  namespace: prod
+  labels:
+    app: web
+    env: prod
+  annotations:
+    description: <span class="str">"Public frontend"</span>
+<span class="kw">spec</span>:
+  ...
+<span class="kw">status</span>:                    <span class="cmt"># заполняет кластер, не вы</span>
+  ...
+</code></pre>
+
+    <h3>Декларативность</h3>
+    <p>Вы пишете <strong>желаемое</strong> (spec). Controller-loop ищет дельту между spec и реальностью и сводит её к нулю.</p>
+
+    <h3>Namespace</h3>
+    <p>Логическая изоляция: ресурсы группируются (<code>kube-system</code>, <code>prod</code>, <code>staging</code>). У одного имени Pod может быть только в одном ns.</p>
+
+    <h3>Labels vs Annotations</h3>
+    <ul>
+      <li><strong>Labels</strong> — для селекторов (<code>selector.matchLabels</code>, <code>kubectl get -l</code>). Короткие, идентификация.</li>
+      <li><strong>Annotations</strong> — для метаданных (changelog, URL дашборда). Не используются для отбора.</li>
+    </ul>
+
+    <h3>Императив vs декларатив</h3>
+<pre><code><span class="cmt"># Императив (быстро, для экспериментов)</span>
+kubectl create deployment web --image=nginx
+kubectl scale deployment web --replicas=3
+kubectl set image deployment/web nginx=nginx:1.27
+
+<span class="cmt"># Декларатив (правильно, в git)</span>
+kubectl apply -f web.yaml
+kubectl apply -f manifests/
+kubectl diff -f web.yaml         <span class="cmt"># увидеть, что поменяется</span>
+</code></pre>
+  </section>
+
+  <section class="note-section" id="pod">
+    <h2><span class="num">// 04</span>Pod — атомарная единица</h2>
+    <p>Pod — один или несколько контейнеров на одной ноде с общими namespace (network, IPC) и volume.</p>
+
+<pre><code><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: Pod
+<span class="kw">metadata</span>: { name: web, labels: { app: web } }
+<span class="kw">spec</span>:
+  containers:
+    - name: app
+      image: nginx:1.27
+      ports: [ { containerPort: 80 } ]
+      env:
+        - name: ENV
+          value: prod
+      resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits:   { cpu: 500m, memory: 256Mi }
+  initContainers:
+    - name: wait-db
+      image: busybox
+      command: [<span class="str">"sh"</span>,<span class="str">"-c"</span>,<span class="str">"until nc -z db 5432; do sleep 1; done"</span>]
+  restartPolicy: Always         <span class="cmt"># default; Pod-level</span>
+</code></pre>
+
+    <h3>Sidecar pattern</h3>
+    <p>Несколько контейнеров в одном Pod: основной + вспомогательный (envoy proxy, log-shipper, cron-job).</p>
+
+    <h3>Лифесайкл</h3>
+    <ul>
+      <li><strong>Pending</strong> — Pod создан, ждёт планировщика/образ.</li>
+      <li><strong>Running</strong> — хотя бы один контейнер запущен.</li>
+      <li><strong>Succeeded</strong> — все контейнеры завершились с exit 0 (Jobs).</li>
+      <li><strong>Failed</strong> — хотя бы один контейнер упал и не будет рестартиться.</li>
+      <li><strong>Unknown</strong> — kubelet не отвечает.</li>
+    </ul>
+
+    <h3>restartPolicy</h3>
+    <ul>
+      <li><strong>Always</strong> — для долгоживущих сервисов (default).</li>
+      <li><strong>OnFailure</strong> — для Job (рестарт при exit != 0).</li>
+      <li><strong>Never</strong> — для одноразовых.</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Важно</div>
+      Голый Pod в проде <strong>не используется</strong>. Если нода упадёт, Pod не воскреснет. Вместо этого — Deployment / StatefulSet / DaemonSet, они управляют Pod-ами через ReplicaSet.
+    </div>
+  </section>
+
+  <section class="note-section" id="workloads">
+    <h2><span class="num">// 05</span>Deployment, StatefulSet, DaemonSet, Job</h2>
+
+    <table class="compare">
+      <thead><tr><th>Workload</th><th>Когда</th><th>Особенности</th></tr></thead>
+      <tbody>
+        <tr><td>Deployment</td><td>Stateless приложения (API, web)</td><td>ReplicaSet под капотом, rolling update, откат</td></tr>
+        <tr><td>StatefulSet</td><td>БД, очереди, всё с identity</td><td>Стабильное имя (web-0, web-1), стабильный PVC</td></tr>
+        <tr><td>DaemonSet</td><td>Агенты на каждой ноде</td><td>node-exporter, log-shipper, CNI</td></tr>
+        <tr><td>Job</td><td>Одноразовая задача</td><td>Запускается до успеха, потом завершается</td></tr>
+        <tr><td>CronJob</td><td>Job по расписанию</td><td>cron-формат</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Deployment</h3>
+<pre><code><span class="kw">apiVersion</span>: apps/v1
+<span class="kw">kind</span>: Deployment
+<span class="kw">metadata</span>: { name: web }
+<span class="kw">spec</span>:
+  replicas: 3
+  selector:
+    matchLabels: { app: web }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 25%, maxUnavailable: 25% }
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels: { app: web }
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/org/app:v1.2.3
+          ports: [ { containerPort: 8080 } ]
+</code></pre>
+
+<pre><code>kubectl rollout status deploy/web
+kubectl rollout history deploy/web
+kubectl rollout undo deploy/web
+kubectl rollout undo deploy/web --to-revision=4
+kubectl scale deploy/web --replicas=5
+</code></pre>
+
+    <h3>StatefulSet</h3>
+    <p>Каждая реплика имеет стабильное имя (<code>db-0</code>, <code>db-1</code>) и свой PVC (<code>data-db-0</code>). Используется с headless Service (clusterIP=None) для отдельного DNS на каждый Pod.</p>
+
+    <h3>Job / CronJob</h3>
+<pre><code><span class="kw">apiVersion</span>: batch/v1
+<span class="kw">kind</span>: CronJob
+<span class="kw">metadata</span>: { name: backup }
+<span class="kw">spec</span>:
+  schedule: <span class="str">"0 2 * * *"</span>
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: backup:latest
+</code></pre>
+  </section>
+
+  <section class="note-section" id="services">
+    <h2><span class="num">// 06</span>Services и kube-proxy</h2>
+    <p>Service — стабильный endpoint поверх множества Pod (которые могут пересоздаваться).</p>
+
+    <table class="compare">
+      <thead><tr><th>Тип Service</th><th>Что делает</th></tr></thead>
+      <tbody>
+        <tr><td>ClusterIP</td><td>Внутренний IP, доступен только из кластера (default)</td></tr>
+        <tr><td>NodePort</td><td>Открывает порт на всех нодах (30000–32767)</td></tr>
+        <tr><td>LoadBalancer</td><td>В облаке — провижинит внешний LB</td></tr>
+        <tr><td>ExternalName</td><td>DNS CNAME на внешний сервис</td></tr>
+        <tr><td>Headless (clusterIP: None)</td><td>Без виртуального IP, DNS возвращает IP всех Pod</td></tr>
+      </tbody>
+    </table>
+
+<pre><code><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: Service
+<span class="kw">metadata</span>: { name: web }
+<span class="kw">spec</span>:
+  type: ClusterIP
+  selector: { app: web }
+  ports:
+    - port: 80          <span class="cmt"># порт самого Service</span>
+      targetPort: 8080  <span class="cmt"># порт в Pod</span>
+      protocol: TCP
+</code></pre>
+
+    <h3>DNS</h3>
+    <p>CoreDNS внутри кластера: <code>web.default.svc.cluster.local</code> резолвится в ClusterIP. Внутри одного namespace — короткое имя <code>web</code>.</p>
+
+    <h3>kube-proxy</h3>
+    <p>Раскладывает правила iptables (или IPVS, eBPF в Cilium) на каждой ноде. ClusterIP — виртуальный, реальный трафик балансируется через DNAT.</p>
+
+    <h3>Endpoints / EndpointSlice</h3>
+    <p>Список реальных IP Pod'ов, которые матчат selector. kube-proxy подписан на изменения.</p>
+
+    <div class="callout info">
+      <div class="callout-label">// Не путать</div>
+      Pod падает → kubelet рестартит на той же ноде, но IP сохраняется. Pod удалён и пересоздан → новый IP. Service IP стабильный, потому что виртуальный.
+    </div>
+  </section>
+
+  <section class="note-section" id="ingress">
+    <h2><span class="num">// 07</span>Ingress и Gateway API</h2>
+    <p>Ingress — слой 7 (HTTP/HTTPS) выше Service. Один external IP на много hostname/path → Service.</p>
+
+<pre><code><span class="kw">apiVersion</span>: networking.k8s.io/v1
+<span class="kw">kind</span>: Ingress
+<span class="kw">metadata</span>:
+  name: app
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+<span class="kw">spec</span>:
+  ingressClassName: nginx
+  tls:
+    - hosts: [app.example.com]
+      secretName: app-tls
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: web, port: { number: 80 } }
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: { name: api, port: { number: 80 } }
+</code></pre>
+
+    <h3>Ingress controllers</h3>
+    <ul>
+      <li><strong>ingress-nginx</strong> — самый популярный, Nginx-based.</li>
+      <li><strong>Traefik</strong> — современный, file-watcher.</li>
+      <li><strong>HAProxy ingress</strong>.</li>
+      <li><strong>Cloud-нативные</strong>: AWS ALB, GCP GLB, AKS App Routing.</li>
+    </ul>
+
+    <h3>Gateway API (новое)</h3>
+    <p>Преемник Ingress: более expressive, role-based (Gateway, HTTPRoute, TLSRoute). С 1.29 стабильно. Если стартуете с нуля и поддерживает контроллер — лучше использовать Gateway API.</p>
+
+    <h3>cert-manager</h3>
+    <p>Автоматически выпускает Let's Encrypt-сертификаты по аннотации на Ingress. Стандарт для prod.</p>
+  </section>
+
+  <section class="note-section" id="config">
+    <h2><span class="num">// 08</span>ConfigMap, Secret, env</h2>
+
+    <h3>ConfigMap</h3>
+<pre><code><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: ConfigMap
+<span class="kw">metadata</span>: { name: app-config }
+<span class="kw">data</span>:
+  LOG_LEVEL: info
+  feature_flags: <span class="str">"new_ui,beta_api"</span>
+  app.conf: |
+    server.port=8080
+    server.timeout=30s
+</code></pre>
+
+    <h3>Secret</h3>
+    <p>Тот же ConfigMap, но base64 encoded (это не шифрование!). Шифрование at-rest настраивается в etcd.</p>
+
+<pre><code><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: Secret
+<span class="kw">metadata</span>: { name: db-cred }
+<span class="kw">type</span>: Opaque
+<span class="kw">data</span>:
+  password: czNjcjN0       <span class="cmt"># base64 of "s3cr3t"</span>
+</code></pre>
+
+    <h3>Использование в Pod</h3>
+<pre><code>spec:
+  containers:
+    - name: app
+      image: app
+      <span class="kw">envFrom</span>:
+        - configMapRef: { name: app-config }
+        - secretRef: { name: db-cred }
+      env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef: { name: db-cred, key: password }
+      volumeMounts:
+        - name: config
+          mountPath: /etc/app
+          readOnly: true
+  <span class="kw">volumes</span>:
+    - name: config
+      configMap:
+        name: app-config
+        items: [ { key: app.conf, path: app.conf } ]
+</code></pre>
+
+    <h3>Внешние секреты</h3>
+    <p>Для prod храните секреты вне кластера: <strong>External Secrets Operator</strong> синхронизирует Vault/AWS Secrets Manager/1Password в K8s Secret. <strong>Sealed Secrets</strong> (Bitnami) — зашифрованные секреты в git.</p>
+
+    <div class="callout">
+      <div class="callout-label">// Внимание</div>
+      Secret в etcd хранится в base64 — это <strong>не</strong> шифрование. Любой с доступом к etcd видит plain text. Включайте <code>EncryptionConfiguration</code> + храните ключ KMS вне кластера.
+    </div>
+  </section>
+
+  <section class="note-section" id="storage">
+    <h2><span class="num">// 09</span>Volumes, PV, PVC, StorageClass</h2>
+
+    <h3>Уровни абстракции</h3>
+    <ul>
+      <li><strong>PersistentVolume (PV)</strong> — конкретный кусок хранилища (диск EBS, том в Ceph). Создаётся админом или динамически.</li>
+      <li><strong>PersistentVolumeClaim (PVC)</strong> — «хочу 10 GB SSD». Пишет приложение / разработчик.</li>
+      <li><strong>StorageClass</strong> — рецепт, как провижинить PV (тип диска, провайдер).</li>
+    </ul>
+
+<pre><code><span class="kw">apiVersion</span>: v1
+<span class="kw">kind</span>: PersistentVolumeClaim
+<span class="kw">metadata</span>: { name: data }
+<span class="kw">spec</span>:
+  accessModes: [ReadWriteOnce]
+  storageClassName: gp3
+  resources:
+    requests: { storage: 10Gi }
+</code></pre>
+
+    <h3>Access modes</h3>
+    <ul>
+      <li><strong>ReadWriteOnce (RWO)</strong> — одна нода может монтировать. Block-device.</li>
+      <li><strong>ReadWriteMany (RWX)</strong> — много нод. Только сетевые ФС (NFS, CephFS).</li>
+      <li><strong>ReadOnlyMany (ROX)</strong> — много нод, только чтение.</li>
+      <li><strong>ReadWriteOncePod (RWOP)</strong> — один Pod на весь кластер.</li>
+    </ul>
+
+    <h3>volumeClaimTemplates в StatefulSet</h3>
+<pre><code><span class="kw">spec</span>:
+  serviceName: db
+  replicas: 3
+  template: ...
+  <span class="kw">volumeClaimTemplates</span>:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: gp3
+        resources: { requests: { storage: 50Gi } }
+</code></pre>
+    <p>Для каждой реплики создаётся свой PVC (<code>data-db-0</code>, <code>data-db-1</code>, <code>data-db-2</code>).</p>
+
+    <h3>Прочие volume types</h3>
+    <ul>
+      <li><strong>emptyDir</strong> — пустая папка, живёт пока Pod жив. Scratch space.</li>
+      <li><strong>hostPath</strong> — путь на ноде. Только для системных DaemonSet, в обычном prod избегайте.</li>
+      <li><strong>projected</strong> — комбо ConfigMap + Secret + downwardAPI в одном mount.</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="resources">
+    <h2><span class="num">// 10</span>Resources, requests, limits, QoS</h2>
+
+    <h3>Requests vs Limits</h3>
+    <ul>
+      <li><strong>requests</strong> — гарантированный ресурс. Scheduler ищет ноду с этим запасом.</li>
+      <li><strong>limits</strong> — потолок. Превышение CPU → throttling; превышение memory → OOMKill.</li>
+    </ul>
+
+<pre><code>resources:
+  requests:
+    cpu: 100m            <span class="cmt"># 0.1 CPU</span>
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+</code></pre>
+
+    <h3>Единицы</h3>
+    <ul>
+      <li>CPU: <code>1</code> = 1 ядро, <code>100m</code> = 0.1 ядра (milliCPU).</li>
+      <li>Memory: <code>128Mi</code> = 128 × 2²⁰ байт. Не путайте с <code>M</code> (10⁶).</li>
+    </ul>
+
+    <h3>QoS классы</h3>
+    <table class="compare">
+      <thead><tr><th>Класс</th><th>Условие</th><th>Что значит</th></tr></thead>
+      <tbody>
+        <tr><td>Guaranteed</td><td>requests == limits для всех container'ов</td><td>Последним убивается при пресс. на ноду</td></tr>
+        <tr><td>Burstable</td><td>requests &lt; limits или только часть задана</td><td>Среднее</td></tr>
+        <tr><td>BestEffort</td><td>Ни requests, ни limits</td><td>Первым убивается при OOM</td></tr>
+      </tbody>
+    </table>
+
+    <h3>LimitRange / ResourceQuota</h3>
+    <p>На уровне namespace:</p>
+    <ul>
+      <li><strong>LimitRange</strong> — дефолтные/min/max requests-limits для контейнеров.</li>
+      <li><strong>ResourceQuota</strong> — суммарный лимит на namespace (например, max 10 CPU и 20 GiB RAM).</li>
+    </ul>
+
+    <h3>HPA — Horizontal Pod Autoscaler</h3>
+<pre><code><span class="kw">apiVersion</span>: autoscaling/v2
+<span class="kw">kind</span>: HorizontalPodAutoscaler
+<span class="kw">metadata</span>: { name: web }
+<span class="kw">spec</span>:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: web }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+</code></pre>
+    <p>Нужен metrics-server. Для custom-метрик (RPS, queue size) — Prometheus Adapter / KEDA.</p>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило большого пальца</div>
+      Всегда задавайте <code>requests</code>. Без них scheduler не знает, что положить на ноду — будут плохие сюрпризы. <code>limits</code> на memory ставьте; на CPU — спорно (CPU throttling часто бьёт по latency).
+    </div>
+  </section>
+
+  <section class="note-section" id="probes">
+    <h2><span class="num">// 11</span>Probes: liveness, readiness, startup</h2>
+
+    <table class="compare">
+      <thead><tr><th>Probe</th><th>На что отвечает</th><th>Что делает kubelet</th></tr></thead>
+      <tbody>
+        <tr><td>liveness</td><td>«Контейнер жив?»</td><td>Если падает — рестартует контейнер</td></tr>
+        <tr><td>readiness</td><td>«Готов принимать трафик?»</td><td>Если падает — убирает Pod из endpoints Service</td></tr>
+        <tr><td>startup</td><td>«Запустился?»</td><td>Откладывает liveness/readiness, пока не пройдёт</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+readinessProbe:
+  httpGet: { path: /ready, port: 8080 }
+  periodSeconds: 5
+  failureThreshold: 2
+startupProbe:
+  httpGet: { path: /healthz, port: 8080 }
+  failureThreshold: 30
+  periodSeconds: 10              <span class="cmt"># итого до 5 минут на старт</span>
+</code></pre>
+
+    <h3>Принцип</h3>
+    <ul>
+      <li><strong>liveness</strong> — чек чего-то проще всего, без зависимостей. «Процесс не deadlocked».</li>
+      <li><strong>readiness</strong> — чек зависимостей (БД, кэш). Когда падает — трафик уходит.</li>
+      <li><strong>startup</strong> — для медленно стартующих приложений (Java, миграции БД).</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-label">// Антипаттерн</div>
+      Делать liveness=readiness=тот же тяжёлый <code>/health</code>, который проверяет всё (БД, S3, кэш). Если БД мигнула — kubelet рестартанёт все Pod'ы каскадно, обвалив сервис целиком. Разделяйте: liveness — про процесс, readiness — про зависимости.
+    </div>
+  </section>
+
+  <section class="note-section" id="sched">
+    <h2><span class="num">// 12</span>Scheduling: nodeSelector, affinity, taints</h2>
+
+    <h3>nodeSelector — простое</h3>
+<pre><code>spec:
+  nodeSelector:
+    disktype: ssd
+    gpu: <span class="str">"true"</span>
+</code></pre>
+
+    <h3>Affinity — гибкое</h3>
+<pre><code>spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - { key: zone, operator: In, values: [eu-west-1a, eu-west-1b] }
+    podAntiAffinity:                        <span class="cmt"># разнести реплики по нодам</span>
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector: { matchLabels: { app: web } }
+            topologyKey: kubernetes.io/hostname
+</code></pre>
+
+    <h3>Taints и Tolerations</h3>
+    <p>Taint — «отметка» на ноде. Pod без соответствующего toleration <strong>не сядет</strong> туда.</p>
+
+<pre><code><span class="cmt"># Пометить ноду</span>
+kubectl taint nodes node-1 dedicated=db:NoSchedule
+
+<span class="cmt"># Pod, который может туда сесть</span>
+spec:
+  tolerations:
+    - key: dedicated
+      operator: Equal
+      value: db
+      effect: NoSchedule
+</code></pre>
+
+    <p>Effect: <code>NoSchedule</code> (не планировать), <code>PreferNoSchedule</code> (избегать), <code>NoExecute</code> (выселить уже работающие).</p>
+
+    <h3>PriorityClass и PDB</h3>
+    <ul>
+      <li><strong>PriorityClass</strong> — приоритет Pod при нехватке ресурсов (важные выживают, низкие — выселяются).</li>
+      <li><strong>PodDisruptionBudget</strong> — гарантия «минимум 2 Pod web всегда онлайн» при добровольных эвакуациях (drain ноды, rollout).</li>
+    </ul>
+
+<pre><code><span class="kw">apiVersion</span>: policy/v1
+<span class="kw">kind</span>: PodDisruptionBudget
+<span class="kw">metadata</span>: { name: web-pdb }
+<span class="kw">spec</span>:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: web }
+</code></pre>
+  </section>
+
+  <section class="note-section" id="rbac">
+    <h2><span class="num">// 13</span>RBAC, ServiceAccount, NetworkPolicy</h2>
+
+    <h3>RBAC</h3>
+    <ul>
+      <li><strong>Role / ClusterRole</strong> — разрешения (verbs: get, list, create, update, delete) на ресурсы.</li>
+      <li><strong>RoleBinding / ClusterRoleBinding</strong> — даёт Role субъекту (User/Group/ServiceAccount).</li>
+    </ul>
+
+<pre><code><span class="kw">apiVersion</span>: rbac.authorization.k8s.io/v1
+<span class="kw">kind</span>: Role
+<span class="kw">metadata</span>: { namespace: dev, name: pod-reader }
+<span class="kw">rules</span>:
+  - apiGroups: [<span class="str">""</span>]
+    resources: [pods, pods/log]
+    verbs: [get, list, watch]
+---
+<span class="kw">apiVersion</span>: rbac.authorization.k8s.io/v1
+<span class="kw">kind</span>: RoleBinding
+<span class="kw">metadata</span>: { namespace: dev, name: dev-can-read-pods }
+<span class="kw">subjects</span>:
+  - kind: User
+    name: alice
+<span class="kw">roleRef</span>:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+</code></pre>
+
+    <h3>ServiceAccount</h3>
+    <p>Identity для процесса <strong>внутри</strong> Pod. По умолчанию — <code>default</code> в каждом namespace (минимальные права). Для приложений, которые ходят в API кластера — отдельный SA с точными правами.</p>
+
+<pre><code>spec:
+  serviceAccountName: app-sa
+  automountServiceAccountToken: false      <span class="cmt"># явно отключить, если API не нужен</span>
+</code></pre>
+
+    <h3>NetworkPolicy</h3>
+    <p>Файрвол на уровне Pod. По умолчанию — <strong>всё со всем</strong>. NetworkPolicy включает «default deny»:</p>
+
+<pre><code><span class="kw">apiVersion</span>: networking.k8s.io/v1
+<span class="kw">kind</span>: NetworkPolicy
+<span class="kw">metadata</span>: { name: deny-all-ingress, namespace: prod }
+<span class="kw">spec</span>:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+<span class="kw">apiVersion</span>: networking.k8s.io/v1
+<span class="kw">kind</span>: NetworkPolicy
+<span class="kw">metadata</span>: { name: allow-web-to-db, namespace: prod }
+<span class="kw">spec</span>:
+  podSelector:
+    matchLabels: { app: db }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: web } }
+      ports:
+        - protocol: TCP
+          port: 5432
+</code></pre>
+
+    <p>Работает только если CNI поддерживает: Cilium, Calico, Weave. Flannel — нет.</p>
+  </section>
+
+  <section class="note-section" id="helm">
+    <h2><span class="num">// 14</span>Helm и Kustomize</h2>
+
+    <h3>Helm — пакетный менеджер</h3>
+    <ul>
+      <li><strong>Chart</strong> — упакованный набор шаблонов K8s-манифестов + values.yaml.</li>
+      <li>Шаблоны на Go templates.</li>
+      <li>Release — установленный экземпляр chart с конкретными values.</li>
+      <li>Версионирование, откат, hooks (pre-install, post-upgrade).</li>
+    </ul>
+
+<pre><code><span class="cmt"># Структура chart</span>
+my-app/
+├── Chart.yaml          <span class="cmt"># метаданные</span>
+├── values.yaml         <span class="cmt"># дефолтные values</span>
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── _helpers.tpl    <span class="cmt"># подключаемые шаблоны</span>
+└── charts/             <span class="cmt"># subcharts (deps)</span>
+</code></pre>
+
+<pre><code>helm install web ./my-app -f values-prod.yaml -n prod
+helm upgrade --install web ./my-app -f values-prod.yaml -n prod
+helm rollback web 1
+helm uninstall web
+helm list -A
+helm template ./my-app -f values-prod.yaml | kubectl diff -f -
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install pg bitnami/postgresql -f pg-values.yaml
+</code></pre>
+
+    <h3>Kustomize — без шаблонов, оверлеи</h3>
+<pre><code>base/
+├── kustomization.yaml
+├── deployment.yaml
+└── service.yaml
+overlays/
+├── prod/
+│   ├── kustomization.yaml
+│   ├── replicas-patch.yaml
+│   └── ingress.yaml
+└── staging/...
+</code></pre>
+
+<pre><code><span class="cmt"># overlays/prod/kustomization.yaml</span>
+resources: [../../base]
+patches:
+  - path: replicas-patch.yaml
+images:
+  - name: app
+    newTag: v1.2.3
+
+<span class="cmt"># Применить</span>
+kubectl apply -k overlays/prod
+kubectl kustomize overlays/prod  | kubectl diff -f -
+</code></pre>
+
+    <h3>Helm vs Kustomize</h3>
+    <ul>
+      <li><strong>Helm</strong> — для общих компонентов (БД, Prometheus). Гибкие values, sharing через repo.</li>
+      <li><strong>Kustomize</strong> — для своих приложений с overlay-моделью. Никаких шаблонов, плоский YAML — легче читать в PR.</li>
+      <li>Часто комбинируют: Helm для общих чартов, Kustomize для управления окружениями.</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="operators">
+    <h2><span class="num">// 15</span>Operators и CRD</h2>
+
+    <h3>CRD — Custom Resource Definition</h3>
+    <p>Расширяет API кластера новыми kind'ами: <code>Certificate</code>, <code>Workflow</code>, <code>KafkaTopic</code>. После apply'а CRD появляется новый <code>kubectl get certificates</code>.</p>
+
+    <h3>Operator</h3>
+    <p>Controller-loop, который следит за custom resource и приводит реальность в соответствие. Паттерн «expert as code»:</p>
+    <ul>
+      <li><strong>cert-manager</strong> — выпуск TLS-сертификатов.</li>
+      <li><strong>Prometheus Operator</strong> — управление Prometheus/Alertmanager через CR (<code>ServiceMonitor</code>, <code>PrometheusRule</code>).</li>
+      <li><strong>PostgreSQL/MySQL operators</strong> (Zalando, Crunchy, Percona) — БД с автомейнтенансом.</li>
+      <li><strong>ArgoCD / FluxCD</strong> — GitOps.</li>
+      <li><strong>Strimzi</strong> — Kafka.</li>
+    </ul>
+
+    <h3>GitOps (ArgoCD)</h3>
+    <p>Главная идея: git — источник истины. ArgoCD следит за репозиторием и применяет манифесты в кластер; дрейф между git и кластером — детектится и подсвечивается.</p>
+
+<pre><code><span class="kw">apiVersion</span>: argoproj.io/v1alpha1
+<span class="kw">kind</span>: Application
+<span class="kw">metadata</span>: { name: web, namespace: argocd }
+<span class="kw">spec</span>:
+  project: default
+  source:
+    repoURL: https://github.com/org/k8s-manifests
+    path: apps/web/overlays/prod
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+</code></pre>
+  </section>
+
+  <section class="note-section" id="debug">
+    <h2><span class="num">// 16</span>Диагностика и kubectl recipes</h2>
+
+    <h3>Базовые recipes</h3>
+<pre><code>kubectl get pods -A
+kubectl get pods -n prod -o wide
+kubectl get pods -l app=web --watch
+kubectl describe pod web-xyz
+kubectl logs web-xyz -c app --tail=100 -f
+kubectl logs web-xyz --previous              <span class="cmt"># после рестарта</span>
+kubectl exec -it web-xyz -c app -- sh
+kubectl port-forward svc/web 8080:80
+kubectl cp web-xyz:/var/log/app.log ./app.log
+kubectl top pod -n prod
+kubectl top nodes
+kubectl events --types=Warning --sort-by=lastTimestamp
+</code></pre>
+
+    <h3>Диагностика «Pod не стартует»</h3>
+    <ol>
+      <li><code>kubectl describe pod X</code> → секция Events.</li>
+      <li>Pending: scheduling fail → проверьте resources, taints, affinity, PVC.</li>
+      <li>ImagePullBackOff: тег не существует / imagePullSecret отсутствует.</li>
+      <li>CrashLoopBackOff: <code>kubectl logs X --previous</code>.</li>
+      <li>OOMKilled: <code>kubectl describe pod</code> → <code>State.Terminated.Reason</code>. Поднять limits.</li>
+      <li>ErrImagePull / ImagePullErr: проблема с registry.</li>
+      <li>Init container не проходит: <code>kubectl logs X -c init-name</code>.</li>
+    </ol>
+
+    <h3>Диагностика «не приходит трафик»</h3>
+    <ol>
+      <li>Service: <code>kubectl get endpoints web</code> — есть IP?</li>
+      <li>Если нет — selector не совпадает с labels Pod, или Pod не Ready.</li>
+      <li>Из другого Pod: <code>kubectl run -it --rm test --image=curlimages/curl -- sh</code> → <code>curl web:80</code>.</li>
+      <li>Ingress: <code>kubectl describe ingress</code> → events; <code>kubectl logs -n ingress-nginx</code>.</li>
+      <li>NetworkPolicy: проверьте, что нет deny от/к этому Pod.</li>
+      <li>DNS: <code>kubectl exec -it X -- nslookup web</code>.</li>
+    </ol>
+
+    <h3>Полезные инструменты</h3>
+    <ul>
+      <li><code>k9s</code> — TUI для кластера.</li>
+      <li><code>stern</code> — multi-pod logs tail.</li>
+      <li><code>kubectx</code> / <code>kubens</code> — переключение контекстов и namespaces.</li>
+      <li><code>kubectl-tree</code> — иерархия ресурсов.</li>
+      <li><code>kubectl debug</code> — ephemeral container (1.25+) для распухших prod-Pod'ов.</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="prod">
+    <h2><span class="num">// 17</span>Prod чек-лист</h2>
+
+    <h3>Pod / Deployment</h3>
+    <ul>
+      <li>requests и memory limit заданы.</li>
+      <li>liveness, readiness, startup probes.</li>
+      <li>image с конкретным тегом (не <code>latest</code>), лучше digest.</li>
+      <li><code>securityContext</code>: <code>runAsNonRoot: true</code>, <code>readOnlyRootFilesystem: true</code>.</li>
+      <li>imagePullPolicy: IfNotPresent (default для именованного тега).</li>
+      <li>Anti-affinity для разнесения реплик по нодам.</li>
+      <li>PodDisruptionBudget.</li>
+      <li>terminationGracePeriodSeconds + graceful shutdown в приложении.</li>
+    </ul>
+
+    <h3>Безопасность</h3>
+    <ul>
+      <li>RBAC по принципу least privilege.</li>
+      <li>NetworkPolicy «default deny» + точечные allow.</li>
+      <li>Pod Security Standards (restricted в проде).</li>
+      <li>Сканирование образов (Trivy в CI).</li>
+      <li>Шифрование etcd at-rest.</li>
+      <li>Audit log включён.</li>
+      <li>Секреты не в манифестах git (External Secrets / SealedSecrets).</li>
+    </ul>
+
+    <h3>Observability</h3>
+    <ul>
+      <li>Prometheus + node_exporter + kube-state-metrics + cAdvisor.</li>
+      <li>Loki + Promtail для логов.</li>
+      <li>Алерты на: under-replicated deployments, OOMKilled, CrashLoopBackOff, PVC fill, node NotReady, certificate expiry.</li>
+      <li>Дашборды: cluster overview, namespace usage, top pods.</li>
+    </ul>
+
+    <h3>Resilience</h3>
+    <ul>
+      <li>Бэкап etcd (snapshot ежедневно, тестируйте restore).</li>
+      <li>Velero для бэкапа объектов K8s + PVC.</li>
+      <li>Multi-AZ ноды, anti-affinity по zone.</li>
+      <li>Cluster autoscaler + Karpenter.</li>
+      <li>Регулярные kube-апгрейды (отстаёте максимум на 1 minor).</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Один совет</div>
+      Поставьте <strong>kube-bench</strong> и <strong>kubescape</strong> на свой кластер. Они проходят по CIS Benchmark и быстро показывают, какие из вышеперечисленных пунктов у вас не закрыты.
+    </div>
+  </section>
+
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Cheatsheet</h2>
+
+    <h3>kubectl — must-know</h3>
+<pre><code><span class="cmt"># Контексты и namespace</span>
+kubectl config get-contexts
+kubectl config use-context CTX
+kubectl config set-context --current --namespace=prod
+
+<span class="cmt"># Применение</span>
+kubectl apply -f file.yaml
+kubectl apply -f manifests/ -R
+kubectl apply -k overlays/prod
+kubectl delete -f file.yaml
+kubectl replace --force -f file.yaml      <span class="cmt"># пересоздать</span>
+
+<span class="cmt"># Просмотр</span>
+kubectl get pods,svc,ing -n prod
+kubectl get pod -o yaml web-xyz
+kubectl get pod -o jsonpath=<span class="str">'{.items[*].metadata.name}'</span>
+kubectl get pods --field-selector status.phase=Pending
+kubectl get pods --sort-by=.status.startTime
+
+<span class="cmt"># Изменение</span>
+kubectl scale deploy/web --replicas=5
+kubectl set image deploy/web app=app:v2
+kubectl edit deploy/web                   <span class="cmt"># EDITOR</span>
+kubectl rollout restart deploy/web
+kubectl rollout status deploy/web
+kubectl rollout undo deploy/web
+
+<span class="cmt"># Создание на лету</span>
+kubectl create deploy web --image=nginx --replicas=3
+kubectl create svc clusterip web --tcp=80:8080
+kubectl create cm app --from-file=config.yaml
+kubectl create secret generic db --from-literal=password=s3cr3t
+
+<span class="cmt"># Запуск контейнера руками</span>
+kubectl run -it --rm tmp --image=busybox -- sh
+kubectl run tmp --image=postgres:16 --env=POSTGRES_PASSWORD=x
+
+<span class="cmt"># Drain / cordon</span>
+kubectl cordon node-1
+kubectl drain node-1 --ignore-daemonsets --delete-emptydir-data
+kubectl uncordon node-1
+</code></pre>
+
+    <h3>Polezные алиасы</h3>
+<pre><code><span class="kw">alias</span> k=kubectl
+<span class="kw">alias</span> kgp=<span class="str">"kubectl get pods"</span>
+<span class="kw">alias</span> kgs=<span class="str">"kubectl get svc"</span>
+<span class="kw">alias</span> kd=<span class="str">"kubectl describe"</span>
+<span class="kw">alias</span> kl=<span class="str">"kubectl logs"</span>
+<span class="kw">alias</span> ke=<span class="str">"kubectl exec -it"</span>
+<span class="kw">source</span> &lt;(kubectl completion bash)
+complete -F __start_kubectl k
+</code></pre>
+
+    <h3>JSONPath / templates</h3>
+<pre><code>kubectl get pods -o jsonpath=<span class="str">'{range .items[*]}{.metadata.name}{"\t"}{.status.phase}{"\n"}{end}'</span>
+kubectl get nodes -o custom-columns=<span class="str">'NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion'</span>
+</code></pre>
+
+    <h3>YAML генерация без applying</h3>
+<pre><code>kubectl create deploy web --image=nginx --dry-run=client -o yaml &gt; web.yaml
+kubectl create svc clusterip web --tcp=80 --dry-run=client -o yaml
+</code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/kubernetes$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

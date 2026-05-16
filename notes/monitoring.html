@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Мониторинг и наблюдаемость</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/monitoring$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Мониторинг
+    </div>
+    <h1>Мониторинг — <span>Prometheus, Grafana, Loki</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 07</span>
+      <span>Недели 15–16 · 14 дней</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Наблюдаемость: metrics, logs, traces</a></li>
+      <li><a href="#prom-arch">Prometheus: архитектура</a></li>
+      <li><a href="#datamodel">Модель данных и labels</a></li>
+      <li><a href="#scrape">scrape_configs и discovery</a></li>
+      <li><a href="#exporters">Exporters: node, blackbox, cAdvisor</a></li>
+      <li><a href="#promql">PromQL: основы</a></li>
+      <li><a href="#promql-adv">PromQL: rate, histogram, aggregations</a></li>
+      <li><a href="#rules">Recording и alerting rules</a></li>
+      <li><a href="#alertmanager">Alertmanager: routing, silences</a></li>
+      <li><a href="#grafana">Grafana: дашборды, переменные</a></li>
+      <li><a href="#loki">Loki + Promtail: логи</a></li>
+      <li><a href="#logql">LogQL</a></li>
+      <li><a href="#traces">Tempo / OpenTelemetry: трассировки</a></li>
+      <li><a href="#zabbix">Zabbix: когда и зачем</a></li>
+      <li><a href="#sli">SLI / SLO / Error budget</a></li>
+      <li><a href="#stack">Полный стек на Docker Compose</a></li>
+      <li><a href="#antipatterns">Антипаттерны и подводные камни</a></li>
+      <li><a href="#cheatsheet">Best practices и cheatsheet</a></li>
+    </ol>
+  </div>
+
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Наблюдаемость: metrics, logs, traces</h2>
+    <p>Три кита observability — <strong>три типа сигналов</strong>, каждый отвечает на свой вопрос:</p>
+
+    <table class="compare">
+      <thead><tr><th>Сигнал</th><th>На что отвечает</th><th>Тип</th><th>Стек (de-facto)</th></tr></thead>
+      <tbody>
+        <tr><td>Metrics</td><td>Что происходит сейчас? Тренды?</td><td>Числа во времени</td><td>Prometheus → Grafana</td></tr>
+        <tr><td>Logs</td><td>Что именно произошло в строке X?</td><td>Текст с timestamp</td><td>Loki / ELK / Vector</td></tr>
+        <tr><td>Traces</td><td>Почему один запрос медленный?</td><td>Цепочка spans</td><td>Tempo / Jaeger / OTel</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Monitoring vs Observability</h3>
+    <ul>
+      <li><strong>Monitoring</strong> — реагируешь на известные проблемы (CPU &gt; 90%).</li>
+      <li><strong>Observability</strong> — можешь ответить на новые, не предусмотренные заранее вопросы (почему именно эти 3% запросов из этого региона тупят?).</li>
+    </ul>
+
+    <h3>Четыре золотых сигнала (Google SRE)</h3>
+    <ol>
+      <li><strong>Latency</strong> — время ответа (отдельно успешных и упавших).</li>
+      <li><strong>Traffic</strong> — нагрузка (RPS).</li>
+      <li><strong>Errors</strong> — частота ошибок.</li>
+      <li><strong>Saturation</strong> — насколько «полная» система (CPU/RAM/IO).</li>
+    </ol>
+
+    <div class="callout info">
+      <div class="callout-label">// Принцип USE для ресурсов</div>
+      На каждый ресурс смотрите <strong>U</strong>tilization, <strong>S</strong>aturation, <strong>E</strong>rrors. Брендан Грегг.
+    </div>
+  </section>
+
+  <section class="note-section" id="prom-arch">
+    <h2><span class="num">// 02</span>Prometheus: архитектура</h2>
+    <p>Prometheus — TSDB (time-series DB) + scraper + alerting engine в одном бинаре. Pull-модель: сам ходит за метриками на endpoints.</p>
+
+    <h3>Компоненты экосистемы</h3>
+    <ul>
+      <li><strong>prometheus-server</strong> — scrape + storage + PromQL.</li>
+      <li><strong>node_exporter</strong> — метрики хоста.</li>
+      <li><strong>application</strong> — отдаёт <code>/metrics</code> сама (через клиентскую библиотеку).</li>
+      <li><strong>pushgateway</strong> — для коротких job (cron).</li>
+      <li><strong>alertmanager</strong> — отдельный сервис: routing, silences, нотификации.</li>
+      <li><strong>grafana</strong> — UI поверх данных.</li>
+    </ul>
+
+    <h3>Поток данных</h3>
+<pre><code>app:/metrics ──┐
+node_exporter ─┼─► Prometheus ──► PromQL ──► Grafana
+cAdvisor ──────┘       │
+                       └─► rules ──► Alertmanager ──► Slack/Email/PagerDuty
+</code></pre>
+
+    <h3>Storage</h3>
+    <p>Локальный TSDB на диске. Дефолтный retention — 15 дней. Для долгого хранения и федерации — <strong>Thanos</strong> / <strong>Cortex</strong> / <strong>Mimir</strong> (offload в S3, multi-tenant, downsampling).</p>
+
+    <table class="compare">
+      <thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+      <tbody>
+        <tr><td><code>--storage.tsdb.retention.time</code></td><td>15d (default)</td></tr>
+        <tr><td><code>--storage.tsdb.path</code></td><td>./data</td></tr>
+        <tr><td><code>--web.listen-address</code></td><td>:9090</td></tr>
+        <tr><td><code>--web.enable-lifecycle</code></td><td>POST /-/reload без перезапуска</td></tr>
+        <tr><td><code>--web.enable-admin-api</code></td><td>delete series API</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="note-section" id="datamodel">
+    <h2><span class="num">// 03</span>Модель данных и labels</h2>
+    <p>Каждая time-series — комбинация <code>metric_name{label1="v1",label2="v2"}</code>. Уникальная пара labels = отдельный ряд.</p>
+
+<pre><code>http_requests_total{method=<span class="str">"GET"</span>, handler=<span class="str">"/api/users"</span>, code=<span class="str">"200"</span>} 4521
+http_requests_total{method=<span class="str">"POST"</span>, handler=<span class="str">"/api/users"</span>, code=<span class="str">"201"</span>} 89
+</code></pre>
+
+    <h3>4 типа метрик</h3>
+    <table class="compare">
+      <thead><tr><th>Тип</th><th>Семантика</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td>Counter</td><td>Растёт монотонно, сбрасывается при рестарте</td><td>http_requests_total</td></tr>
+        <tr><td>Gauge</td><td>Произвольное значение, растёт/падает</td><td>memory_usage_bytes, queue_size</td></tr>
+        <tr><td>Histogram</td><td>Bucket'ы + sum + count → квантили вычисляются</td><td>http_request_duration_seconds</td></tr>
+        <tr><td>Summary</td><td>Квантили считаются на клиенте, нельзя агрегировать</td><td>То же, но реже используется</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Соглашения по именованию</h3>
+    <ul>
+      <li>Единицы в конце: <code>_bytes</code>, <code>_seconds</code>, <code>_total</code> для counter.</li>
+      <li>Snake_case.</li>
+      <li>Префикс по подсистеме: <code>node_</code>, <code>http_</code>, <code>db_</code>.</li>
+      <li>Не кладите в label высоко-кардинальные значения (user_id, request_id) — взорвёт TSDB.</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-label">// Кардинальность убивает</div>
+      Каждая уникальная комбинация labels — отдельный ряд. <code>user_id</code> в label на 1М юзеров = 1М рядов на каждую метрику. Через час Prometheus падает. <strong>Правило:</strong> labels — это размерность для агрегации (метод, код, инстанс), не идентификатор сущности.
+    </div>
+  </section>
+
+  <section class="note-section" id="scrape">
+    <h2><span class="num">// 04</span>scrape_configs и discovery</h2>
+
+<pre><code><span class="cmt"># prometheus.yml</span>
+<span class="kw">global</span>:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: production
+
+<span class="kw">scrape_configs</span>:
+  - job_name: prometheus
+    static_configs:
+      - targets: [<span class="str">"localhost:9090"</span>]
+
+  - job_name: node
+    static_configs:
+      - targets: [<span class="str">"web-01:9100"</span>, <span class="str">"db-01:9100"</span>]
+        labels: { env: prod }
+
+  - job_name: kubernetes-pods
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: <span class="str">"true"</span>
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+        target_label: __address__
+        replacement: <span class="str">"$1:$2"</span>
+
+<span class="kw">alerting</span>:
+  alertmanagers:
+    - static_configs:
+        - targets: [<span class="str">"alertmanager:9093"</span>]
+
+<span class="kw">rule_files</span>:
+  - <span class="str">"rules/*.yml"</span>
+</code></pre>
+
+    <h3>Service discovery</h3>
+    <ul>
+      <li><strong>static_configs</strong> — для мелких/стабильных setup.</li>
+      <li><strong>file_sd_configs</strong> — JSON-файл, обновляемый внешним процессом.</li>
+      <li><strong>kubernetes_sd_configs</strong> — pods/services/endpoints/nodes/ingresses.</li>
+      <li><strong>consul_sd / dns_sd / ec2_sd</strong> — динамические targets.</li>
+    </ul>
+
+    <h3>Relabeling — основа гибкости</h3>
+    <p>Прежде чем targets попадут в TSDB, Prometheus прогоняет их через <code>relabel_configs</code> (фильтрация и перепись labels) и <code>metric_relabel_configs</code> (после scrape — фильтрация по имени метрики).</p>
+
+<pre><code><span class="cmt"># Пример: убрать высоко-кардинальную метрику</span>
+metric_relabel_configs:
+  - source_labels: [__name__]
+    regex: <span class="str">"go_gc_duration_seconds.*"</span>
+    action: drop
+</code></pre>
+  </section>
+
+  <section class="note-section" id="exporters">
+    <h2><span class="num">// 05</span>Exporters: node, blackbox, cAdvisor</h2>
+    <p>Exporter — отдельный процесс, выгружающий метрики системы / БД / API в формате Prometheus.</p>
+
+    <table class="compare">
+      <thead><tr><th>Exporter</th><th>Метрики</th><th>Порт</th></tr></thead>
+      <tbody>
+        <tr><td>node_exporter</td><td>CPU, RAM, disk, net, fs, hwmon</td><td>9100</td></tr>
+        <tr><td>cAdvisor</td><td>Метрики контейнеров (включая Docker)</td><td>8080</td></tr>
+        <tr><td>blackbox_exporter</td><td>HTTP/TCP/ICMP probes (extern.черка)</td><td>9115</td></tr>
+        <tr><td>postgres_exporter</td><td>PostgreSQL: queries, connections, locks</td><td>9187</td></tr>
+        <tr><td>mysqld_exporter</td><td>MySQL</td><td>9104</td></tr>
+        <tr><td>redis_exporter</td><td>Redis</td><td>9121</td></tr>
+        <tr><td>nginx-prometheus-exporter</td><td>Nginx stub_status</td><td>9113</td></tr>
+        <tr><td>kube-state-metrics</td><td>K8s объекты (deployments, pods)</td><td>8080</td></tr>
+        <tr><td>process-exporter</td><td>Произвольный процесс</td><td>9256</td></tr>
+      </tbody>
+    </table>
+
+    <h3>node_exporter — самый важный</h3>
+<pre><code><span class="cmt"># systemd unit (упрощённо)</span>
+[Service]
+ExecStart=/usr/local/bin/node_exporter \
+  --collector.systemd \
+  --collector.processes \
+  --no-collector.wifi
+User=node_exporter
+</code></pre>
+
+    <h3>Blackbox: проверка извне</h3>
+<pre><code>- job_name: blackbox-http
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+  static_configs:
+    - targets:
+        - https://example.com
+        - https://api.example.com/health
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: blackbox:9115
+</code></pre>
+
+    <h3>Свой exporter</h3>
+    <p>Используйте клиентскую библиотеку (Go/Python/Java/Rust) и отдавайте <code>/metrics</code> на встроенном порту:</p>
+<pre><code><span class="cmt"># Python (prometheus_client)</span>
+<span class="kw">from</span> prometheus_client <span class="kw">import</span> Counter, Histogram, start_http_server
+
+reqs = Counter(<span class="str">'app_requests_total'</span>, <span class="str">'Total requests'</span>, [<span class="str">'method'</span>, <span class="str">'code'</span>])
+lat = Histogram(<span class="str">'app_request_seconds'</span>, <span class="str">'Latency'</span>)
+
+start_http_server(8000)
+</code></pre>
+  </section>
+
+  <section class="note-section" id="promql">
+    <h2><span class="num">// 06</span>PromQL: основы</h2>
+    <p>PromQL — язык запросов. Возвращает 4 типа результата: <em>instant vector</em>, <em>range vector</em>, <em>scalar</em>, <em>string</em>.</p>
+
+    <h3>Селекторы</h3>
+<pre><code><span class="cmt"># Instant: значение каждого ряда сейчас</span>
+node_cpu_seconds_total
+
+<span class="cmt"># Фильтр по label</span>
+node_cpu_seconds_total{mode=<span class="str">"idle"</span>}
+node_cpu_seconds_total{mode!=<span class="str">"idle"</span>}
+node_cpu_seconds_total{instance=~<span class="str">"web-.*"</span>}
+node_cpu_seconds_total{job=~<span class="str">"node|cadvisor"</span>}
+
+<span class="cmt"># Range: значения за окно</span>
+node_cpu_seconds_total[5m]
+
+<span class="cmt"># Сдвиг во времени</span>
+node_cpu_seconds_total offset 1h
+</code></pre>
+
+    <h3>Арифметика и сравнения</h3>
+<pre><code><span class="cmt"># Свободное место в %</span>
+node_filesystem_avail_bytes / node_filesystem_size_bytes * 100
+
+<span class="cmt"># Фильтр (бинарный оператор с bool — возвращает 0/1)</span>
+node_filesystem_avail_bytes / node_filesystem_size_bytes &lt; 0.1
+</code></pre>
+
+    <h3>Группировка при бинарных операциях</h3>
+<pre><code><span class="cmt"># ignoring — игнорировать определённые labels</span>
+sum(rate(http_errors_total[5m])) by (service) /
+sum(rate(http_requests_total[5m])) by (service)
+
+<span class="cmt"># on() — сопоставлять только по этим labels</span>
+metric_a * on(instance) group_left(role) metric_b
+</code></pre>
+  </section>
+
+  <section class="note-section" id="promql-adv">
+    <h2><span class="num">// 07</span>PromQL: rate, histogram, aggregations</h2>
+
+    <h3>rate / irate / increase</h3>
+    <ul>
+      <li><strong>rate(x[5m])</strong> — средняя скорость роста counter за 5 минут (per-second).</li>
+      <li><strong>irate(x[5m])</strong> — мгновенная (последние 2 точки). Дёрганный — для дашбордов avoid.</li>
+      <li><strong>increase(x[5m])</strong> — = <code>rate * время</code>. Сколько «штук» за 5 минут.</li>
+    </ul>
+
+<pre><code><span class="cmt"># RPS за 5 минут</span>
+sum(rate(http_requests_total[5m])) by (service)
+
+<span class="cmt"># Ошибки в % за 5 минут</span>
+sum(rate(http_requests_total{code=~<span class="str">"5.."</span>}[5m])) by (service)
+  /
+sum(rate(http_requests_total[5m])) by (service)
+
+<span class="cmt"># CPU usage % (1 - idle)</span>
+100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=<span class="str">"idle"</span>}[5m])))
+</code></pre>
+
+    <h3>histogram_quantile</h3>
+    <p>Histogram отдаёт bucket'ы (<code>le="0.005"</code>, <code>le="0.01"</code>...). Квантили считаются на запросе:</p>
+<pre><code><span class="cmt"># p95 latency</span>
+histogram_quantile(0.95,
+  sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))
+</code></pre>
+
+    <h3>Aggregation operators</h3>
+    <p><code>sum</code>, <code>avg</code>, <code>min</code>, <code>max</code>, <code>count</code>, <code>stddev</code>, <code>quantile</code>, <code>topk</code>, <code>bottomk</code>, <code>group</code>. Управление группировкой: <code>by</code> / <code>without</code>:</p>
+<pre><code>sum by (job) (rate(http_requests_total[5m]))
+avg without (cpu) (rate(node_cpu_seconds_total[5m]))
+topk(5, sum by (instance) (rate(node_cpu_seconds_total[5m])))
+</code></pre>
+
+    <h3>Полезные функции</h3>
+    <ul>
+      <li><code>deriv()</code>, <code>predict_linear(x[1h], 4*3600)</code> — экстраполяция (диск кончится через ?).</li>
+      <li><code>changes(x[1h])</code> — сколько раз gauge менялся.</li>
+      <li><code>resets(x[1h])</code> — сколько раз counter сбрасывался.</li>
+      <li><code>absent(metric)</code> / <code>absent_over_time</code> — алерт «метрики нет».</li>
+      <li><code>label_replace</code>, <code>label_join</code> — манипуляция labels.</li>
+      <li><code>vector(0)</code> — выдать пустоту как 0 (полезно в OR).</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило большого пальца</div>
+      Окно в <code>rate(x[5m])</code> должно быть <strong>≥ 4× scrape_interval</strong>. При scrape 15s — окно минимум 1m, лучше 5m. Иначе rate теряет точность при пропущенных scrape'ах.
+    </div>
+  </section>
+
+  <section class="note-section" id="rules">
+    <h2><span class="num">// 08</span>Recording и alerting rules</h2>
+
+    <h3>Recording rules — кэширование тяжёлых запросов</h3>
+<pre><code><span class="cmt"># rules/recording.yml</span>
+<span class="kw">groups</span>:
+  - name: http
+    interval: 30s
+    rules:
+      - record: job:http_requests:rate5m
+        expr: sum by (job) (rate(http_requests_total[5m]))
+
+      - record: job:http_errors:rate5m
+        expr: sum by (job) (rate(http_requests_total{code=~<span class="str">"5.."</span>}[5m]))
+</code></pre>
+    <p>Префиксы: <code>level:metric:operation</code> (Google convention).</p>
+
+    <h3>Alerting rules</h3>
+<pre><code><span class="kw">groups</span>:
+  - name: critical
+    rules:
+      - alert: HighErrorRate
+        expr: job:http_errors:rate5m / job:http_requests:rate5m &gt; 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: <span class="str">"High error rate on {{ $labels.job }}"</span>
+          description: <span class="str">"{{ $value | humanizePercentage }} errors in last 5m"</span>
+          runbook: <span class="str">"https://wiki/runbooks/high-error-rate"</span>
+</code></pre>
+
+    <h3>Жизненный цикл алерта</h3>
+    <ul>
+      <li><strong>inactive</strong> — выражение false.</li>
+      <li><strong>pending</strong> — expr=true, но <code>for:</code> ещё не истекло.</li>
+      <li><strong>firing</strong> — отправляется в Alertmanager.</li>
+    </ul>
+    <p><code>for: 10m</code> — критично, чтобы не флапать по одиночному всплеску.</p>
+  </section>
+
+  <section class="note-section" id="alertmanager">
+    <h2><span class="num">// 09</span>Alertmanager: routing, silences</h2>
+    <p>Отдельный сервис, получает алерты от Prometheus, занимается:</p>
+    <ul>
+      <li><strong>Группировкой</strong> — несколько одинаковых алертов = одно уведомление.</li>
+      <li><strong>Routing</strong> — куда отправлять (Slack/Telegram/Email/PagerDuty/WebHook).</li>
+      <li><strong>Suppression / Inhibit</strong> — при critical скрывать warning.</li>
+      <li><strong>Silences</strong> — временное «молчание» по фильтру.</li>
+    </ul>
+
+<pre><code><span class="cmt"># alertmanager.yml</span>
+<span class="kw">route</span>:
+  group_by: [alertname, cluster, service]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: slack-default
+  routes:
+    - matchers: [<span class="str">'severity="critical"'</span>]
+      receiver: pagerduty
+      continue: true
+    - matchers: [<span class="str">'team="data"'</span>]
+      receiver: slack-data
+
+<span class="kw">inhibit_rules</span>:
+  - source_matchers: [<span class="str">'severity="critical"'</span>]
+    target_matchers: [<span class="str">'severity="warning"'</span>]
+    equal: [alertname, cluster]
+
+<span class="kw">receivers</span>:
+  - name: slack-default
+    slack_configs:
+      - api_url: <span class="str">"https://hooks.slack.com/..."</span>
+        channel: <span class="str">"#alerts"</span>
+        title: <span class="str">"{{ .CommonLabels.alertname }}"</span>
+        text: <span class="str">"{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}"</span>
+
+  - name: pagerduty
+    pagerduty_configs:
+      - service_key: <span class="str">"..."</span>
+</code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// Шаблоны</div>
+      Алерты используют Go templates. <code>{{ $labels.X }}</code>, <code>{{ $value }}</code>, <code>{{ .Annotations.summary }}</code>. Часто пишут отдельный template-файл и подключают через <code>templates:</code>.
+    </div>
+  </section>
+
+  <section class="note-section" id="grafana">
+    <h2><span class="num">// 10</span>Grafana: дашборды, переменные</h2>
+    <p>UI поверх Prometheus, Loki, InfluxDB, MySQL и т.д. Дашборд — JSON, можно версионировать в git.</p>
+
+    <h3>Datasource</h3>
+    <p>Provisioning через файлы <code>/etc/grafana/provisioning/datasources/*.yml</code>:</p>
+<pre><code><span class="kw">apiVersion</span>: 1
+<span class="kw">datasources</span>:
+  - name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+  - name: Loki
+    type: loki
+    url: http://loki:3100
+</code></pre>
+
+    <h3>Переменные дашборда</h3>
+    <ul>
+      <li><strong>Query</strong> — список из метрики: <code>label_values(node_cpu_seconds_total, instance)</code>.</li>
+      <li><strong>Custom</strong> — статичный список.</li>
+      <li><strong>Interval</strong> — для функций (используйте <code>$__rate_interval</code>!).</li>
+      <li><strong>Datasource</strong> — выбор источника прямо в дашборде.</li>
+      <li><strong>Multi-value</strong> + <strong>Include All</strong> — типичная связка.</li>
+    </ul>
+
+    <p>В PromQL: <code>rate(http_requests_total{instance=~"$instance"}[$__rate_interval])</code>.</p>
+
+    <h3>Типы панелей</h3>
+    <ul>
+      <li><strong>Time series</strong> — основной.</li>
+      <li><strong>Stat</strong> — одно большое число.</li>
+      <li><strong>Gauge / Bar gauge</strong> — для % и порогов.</li>
+      <li><strong>Table</strong> — для top-N.</li>
+      <li><strong>Heatmap</strong> — для histogram-распределений.</li>
+      <li><strong>Logs</strong> — для Loki.</li>
+      <li><strong>Node graph</strong> — для трассировок.</li>
+    </ul>
+
+    <h3>Готовые дашборды</h3>
+    <p>grafana.com/dashboards — поиск по ID. Полезные стартовые:</p>
+    <ul>
+      <li><strong>1860</strong> — Node Exporter Full</li>
+      <li><strong>14282</strong> — cAdvisor</li>
+      <li><strong>11074</strong> — Node Exporter rus</li>
+      <li><strong>13639</strong> — Loki Logs</li>
+      <li><strong>9628</strong> — PostgreSQL</li>
+    </ul>
+  </section>
+
+  <section class="note-section" id="loki">
+    <h2><span class="num">// 11</span>Loki + Promtail: логи</h2>
+    <p>Loki — "Prometheus для логов". Хранит логи без полнотекстовой индексации; индексируются только labels. Дёшево, быстро на горячих labels.</p>
+
+    <h3>Архитектура</h3>
+<pre><code>app stdout ──► Promtail / Vector / Fluent Bit ──► Loki ──► Grafana
+                       │
+                       └─ читает /var/log/, контейнеры, journald
+</code></pre>
+
+    <h3>Promtail config (упрощённо)</h3>
+<pre><code><span class="kw">server</span>:
+  http_listen_port: 9080
+
+<span class="kw">clients</span>:
+  - url: http://loki:3100/loki/api/v1/push
+
+<span class="kw">scrape_configs</span>:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        target_label: container
+
+  - job_name: system
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Кардинальность v.2</div>
+      В labels Loki — те же правила, что у Prometheus: <strong>не суйте</strong> request_id, trace_id, user_id в labels. Они должны быть <em>внутри сообщения лога</em>, оттуда LogQL вытащит через <code>| json</code> или <code>| regexp</code>.
+    </div>
+  </section>
+
+  <section class="note-section" id="logql">
+    <h2><span class="num">// 12</span>LogQL</h2>
+    <p>LogQL = «PromQL для логов». Селектор labels + фильтры + парсинг.</p>
+
+<pre><code><span class="cmt"># Все логи nginx</span>
+{job=<span class="str">"nginx"</span>}
+
+<span class="cmt"># С фильтром по подстроке</span>
+{job=<span class="str">"nginx"</span>} |= <span class="str">"ERROR"</span>
+{job=<span class="str">"nginx"</span>} != <span class="str">"healthcheck"</span>
+{job=<span class="str">"nginx"</span>} |~ <span class="str">"5\\d\\d"</span>             <span class="cmt"># regex</span>
+
+<span class="cmt"># Парсинг JSON</span>
+{app=<span class="str">"api"</span>} | json | level=<span class="str">"error"</span> | line_format <span class="str">"{{.msg}}"</span>
+
+<span class="cmt"># logfmt</span>
+{app=<span class="str">"api"</span>} | logfmt | duration &gt; 500ms
+
+<span class="cmt"># Метрика из логов</span>
+sum by (path) (rate({app=<span class="str">"api"</span>} |~ <span class="str">"GET"</span> [5m]))
+</code></pre>
+
+    <h3>Range функции (как в PromQL)</h3>
+<pre><code><span class="cmt"># Скорость 5xx</span>
+sum(rate({app=<span class="str">"api"</span>} |~ <span class="str">"status=5"</span> [5m]))
+
+<span class="cmt"># Топ ошибок</span>
+topk(10,
+  sum by (path) (count_over_time({app=<span class="str">"api"</span>} |= <span class="str">"ERROR"</span> [1h])))
+</code></pre>
+
+    <p>На основе LogQL можно делать alerting rules (через Loki ruler) — например, «больше 100 ERROR за 5m — алерт».</p>
+  </section>
+
+  <section class="note-section" id="traces">
+    <h2><span class="num">// 13</span>Tempo / OpenTelemetry: трассировки</h2>
+    <p>Trace = цепочка spans. Каждый span — кусок работы (HTTP-запрос, SQL-вызов, gRPC-call), с trace_id и parent_id.</p>
+
+    <h3>OpenTelemetry (OTel)</h3>
+    <ul>
+      <li>Стандарт CNCF. Заменяет проприетарные SDK Jaeger/Zipkin.</li>
+      <li><strong>OTel SDK</strong> в приложении инструментирует код.</li>
+      <li><strong>OTel Collector</strong> принимает (gRPC/HTTP), обрабатывает, отправляет в backend.</li>
+      <li>Backend — Tempo (Grafana) / Jaeger / Zipkin / коммерческие SaaS.</li>
+    </ul>
+
+    <h3>Tempo</h3>
+    <p>Дешёвое хранилище traces в S3. Связан с логами через trace_id: в Grafana кликаешь на span → улетаешь в Loki с фильтром по trace_id. Это и есть <strong>correlation</strong>.</p>
+
+    <h3>Auto vs manual инструментация</h3>
+    <ul>
+      <li><strong>Auto</strong> — opentelemetry-instrumentation-* агенты автоматически оборачивают HTTP, БД, Redis, gRPC, Kafka и т.п. Минимум кода.</li>
+      <li><strong>Manual</strong> — <code>tracer.start_as_current_span("checkout")</code> в бизнес-логике для важных операций.</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Sampling</div>
+      Сохранять 100% traces — дорого. Стандарт: head-based (1–5% случайно) или tail-based (на коллекторе — оставлять только медленные/ошибочные). 1% — нормальная default.
+    </div>
+  </section>
+
+  <section class="note-section" id="zabbix">
+    <h2><span class="num">// 14</span>Zabbix: когда и зачем</h2>
+    <p>Zabbix — старая, тяжёлая, но широко распространённая в РФ система. Push+pull, агент на хосте, БД (MySQL/Postgres), своя web-UI.</p>
+
+    <table class="compare">
+      <thead><tr><th></th><th>Zabbix</th><th>Prometheus + стек</th></tr></thead>
+      <tbody>
+        <tr><td>Модель</td><td>Push + pull, агент</td><td>Pull, exporters</td></tr>
+        <tr><td>Хранение</td><td>SQL БД</td><td>TSDB на диске</td></tr>
+        <tr><td>Авто-discovery</td><td>Встроенный</td><td>Через SD-плагины</td></tr>
+        <tr><td>UI</td><td>Встроенный + Grafana</td><td>Grafana</td></tr>
+        <tr><td>Алерты</td><td>Встроенные triggers</td><td>Alertmanager</td></tr>
+        <tr><td>Сложность setup</td><td>Высокая (БД, web, агент)</td><td>Средняя (один бинарь + exporters)</td></tr>
+        <tr><td>Идеально для</td><td>Сетевое оборудование, SNMP, legacy инфры</td><td>Контейнеры, k8s, cloud-native</td></tr>
+        <tr><td>Embracing метрик приложения</td><td>Сложно</td><td>Естественно (через клиент SDK)</td></tr>
+      </tbody>
+    </table>
+
+    <p>В рос. компаниях с парком физических серверов + сетевым железом — Zabbix часто живёт уже 10 лет. Учите минимум: <em>что такое item, trigger, template, host group</em>, <em>как настроить мониторинг через агент и SNMP</em>.</p>
+
+    <h3>Zabbix → Prometheus конверсия</h3>
+    <p>Иногда параллельно живут оба: Zabbix для инфры, Prometheus для приложений и k8s. Это нормально на переходный период.</p>
+  </section>
+
+  <section class="note-section" id="sli">
+    <h2><span class="num">// 15</span>SLI / SLO / Error budget</h2>
+    <p>Без этого мониторинг превращается в шум. <strong>Sit down с продактом</strong> и сформулируйте, что значит «работает».</p>
+
+    <ul>
+      <li><strong>SLI (Service Level Indicator)</strong> — измеримая характеристика. Пример: доля запросов с latency &lt; 300ms и кодом 2xx за период.</li>
+      <li><strong>SLO (Service Level Objective)</strong> — цель: 99.9% запросов за месяц.</li>
+      <li><strong>SLA (Service Level Agreement)</strong> — то же, но в договоре, с штрафами.</li>
+      <li><strong>Error budget</strong> — допустимая доля «плохих» событий: 100% − 99.9% = 0.1% (~43 минуты/месяц).</li>
+    </ul>
+
+    <h3>SLO-based alerting</h3>
+    <p>Алертить не на «CPU 90%», а на <strong>сжигание бюджета</strong>: «за последний час сжато &gt; 5% месячного бюджета» → серьёзная проблема. Метод <em>Multi-window multi-burn-rate</em> (SRE Workbook).</p>
+
+<pre><code><span class="cmt"># Пример алерта на быстрое сжигание бюджета</span>
+- alert: SLOBurnRateHigh
+  expr: |
+    (
+      sum(rate(http_requests_total{code=~<span class="str">"5.."</span>}[1h])) by (service)
+      / sum(rate(http_requests_total[1h])) by (service)
+    ) &gt; (14.4 * 0.001)            <span class="cmt"># 14.4×budget rate для 99.9%</span>
+  for: 2m
+  labels: { severity: critical }
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Принцип</div>
+      Алерт должен значить «пора звонить человеку прямо сейчас». Если за неделю &gt; 5 алертов оказались false positive — это <strong>не алерты, а спам</strong>. Чините правила, не игнорируйте.
+    </div>
+  </section>
+
+  <section class="note-section" id="stack">
+    <h2><span class="num">// 16</span>Полный стек на Docker Compose</h2>
+
+<pre><code><span class="cmt"># docker-compose.yml — минимальный стек observability</span>
+<span class="kw">services</span>:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./rules:/etc/prometheus/rules
+      - prom_data:/prometheus
+    command:
+      - <span class="str">'--config.file=/etc/prometheus/prometheus.yml'</span>
+      - <span class="str">'--storage.tsdb.retention.time=15d'</span>
+      - <span class="str">'--web.enable-lifecycle'</span>
+    ports: [<span class="str">"9090:9090"</span>]
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports: [<span class="str">"9093:9093"</span>]
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    pid: host
+    volumes: [<span class="str">"/:/host:ro,rslave"</span>]
+    command: [<span class="str">"--path.rootfs=/host"</span>]
+    ports: [<span class="str">"9100:9100"</span>]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    ports: [<span class="str">"8080:8080"</span>]
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports: [<span class="str">"3000:3000"</span>]
+
+  loki:
+    image: grafana/loki:latest
+    command: [<span class="str">"-config.file=/etc/loki/local-config.yaml"</span>]
+    ports: [<span class="str">"3100:3100"</span>]
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - /var/log:/var/log
+      - ./promtail.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: [<span class="str">"-config.file=/etc/promtail/config.yml"</span>]
+
+<span class="kw">volumes</span>:
+  prom_data:
+  grafana_data:
+</code></pre>
+
+    <p>За 5 минут — полноценная локальная связка metrics + logs. Дальше — добавляйте exporters под свои базы и приложения.</p>
+  </section>
+
+  <section class="note-section" id="antipatterns">
+    <h2><span class="num">// 17</span>Антипаттерны и подводные камни</h2>
+
+    <ol>
+      <li><strong>Высоко-кардинальные labels</strong> — user_id / request_id / IP. TSDB взорвётся за часы.</li>
+      <li><strong>rate() на gauge</strong> — бессмысленно. <code>rate()</code> только для counter.</li>
+      <li><strong>Слишком короткий range в rate</strong> — <code>rate(x[1m])</code> при scrape_interval=30s — половина запросов вернёт пусто.</li>
+      <li><strong>Алерт без <code>for:</code></strong> — флапает на одиночные всплески.</li>
+      <li><strong>Алерт «CPU &gt; 90%»</strong> — не симптом, а причина. Алертить нужно на симптом (latency, errors).</li>
+      <li><strong>Слишком много алертов</strong> — теряется доверие, появляется <em>alert fatigue</em>.</li>
+      <li><strong>Дашборд без legend и единиц</strong> — что значит линия 0.0042?</li>
+      <li><strong>Хранение всего навечно</strong> — без downsampling Thanos/Mimir растёт линейно. 15d retention default — норма.</li>
+      <li><strong>Нет smoke-теста для Prometheus</strong> — самой Prometheus тоже мониторьте (через второй Prometheus или Pushgateway heartbeat).</li>
+      <li><strong>Игнор runbook</strong> — каждый алерт должен иметь <code>annotations.runbook</code> со ссылкой на инструкцию что делать.</li>
+    </ol>
+  </section>
+
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Best practices и cheatsheet</h2>
+
+    <h3>Порядок внедрения с нуля</h3>
+    <ol>
+      <li>Поднять Prometheus + Grafana + node_exporter.</li>
+      <li>Импортировать дашборд 1860 (Node Exporter Full).</li>
+      <li>Добавить cAdvisor (если есть Docker).</li>
+      <li>Подключить blackbox_exporter для внешнего health-check.</li>
+      <li>Инструментировать приложения (RED-метрики: <strong>R</strong>ate, <strong>E</strong>rrors, <strong>D</strong>uration).</li>
+      <li>Alertmanager + первые 3–5 алертов (latency, error rate, no metrics).</li>
+      <li>Loki + Promtail.</li>
+      <li>SLO для основных сервисов.</li>
+    </ol>
+
+    <h3>Полезные команды</h3>
+<pre><code><span class="cmt"># Перезагрузка Prometheus конфига без рестарта</span>
+curl -X POST http://prometheus:9090/-/reload
+
+<span class="cmt"># Валидация rules-файла</span>
+promtool check rules rules/*.yml
+promtool check config prometheus.yml
+
+<span class="cmt"># Тест PromQL прямо из CLI</span>
+promtool query instant http://prometheus:9090 <span class="str">'up'</span>
+promtool query range http://prometheus:9090 \
+  <span class="str">'rate(http_requests_total[5m])'</span> \
+  --start=<span class="str">"$(date -u -d '1 hour ago' +%FT%TZ)"</span> \
+  --end=<span class="str">"$(date -u +%FT%TZ)"</span> --step=30s
+
+<span class="cmt"># Удалить серии</span>
+curl -X POST -g <span class="str">'http://prometheus:9090/api/v1/admin/tsdb/delete_series?match[]=high_card_metric'</span>
+</code></pre>
+
+    <h3>Минимальный набор алертов для VM</h3>
+<pre><code>- alert: InstanceDown
+  expr: up == 0
+  for: 5m
+  labels: { severity: critical }
+  annotations: { summary: <span class="str">"{{ $labels.instance }} is down"</span> }
+
+- alert: HighDiskUsage
+  expr: |
+    100 * (1 - node_filesystem_avail_bytes{fstype!~<span class="str">"tmpfs|overlay"</span>}
+              / node_filesystem_size_bytes) &gt; 85
+  for: 10m
+  labels: { severity: warning }
+
+- alert: DiskWillFillIn4h
+  expr: predict_linear(node_filesystem_avail_bytes[1h], 4*3600) &lt; 0
+  for: 10m
+  labels: { severity: critical }
+
+- alert: HighCPU
+  expr: 100 * (1 - avg by (instance)
+              (rate(node_cpu_seconds_total{mode=<span class="str">"idle"</span>}[5m]))) &gt; 90
+  for: 15m
+
+- alert: OOMKillRecent
+  expr: rate(node_vmstat_oom_kill[5m]) &gt; 0
+  for: 1m
+</code></pre>
+
+    <h3>RED-метрики для каждого endpoint</h3>
+<pre><code><span class="cmt"># Rate</span>
+sum by (path) (rate(http_requests_total[5m]))
+
+<span class="cmt"># Errors</span>
+sum by (path) (rate(http_requests_total{code=~<span class="str">"5.."</span>}[5m]))
+
+<span class="cmt"># Duration p95</span>
+histogram_quantile(0.95,
+  sum by (le, path) (rate(http_request_duration_seconds_bucket[5m])))
+</code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/monitoring$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>
