@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Bash Scripting</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/bash$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Bash
+    </div>
+    <h1>Bash <span>Scripting</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 03</span>
+      <span>Недели 5–6 · 14 дней</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое Bash и зачем DevOps</a></li>
+      <li><a href="#shebang">Shebang, права, запуск скрипта</a></li>
+      <li><a href="#vars">Переменные и типы данных</a></li>
+      <li><a href="#quotes">Кавычки и подстановка</a></li>
+      <li><a href="#if">Условия: if / elif / else</a></li>
+      <li><a href="#case">Конструкция case</a></li>
+      <li><a href="#loops">Циклы: for, while, until</a></li>
+      <li><a href="#functions">Функции, scope, return</a></li>
+      <li><a href="#args">Аргументы $1, $@, $#, getopts</a></li>
+      <li><a href="#exitcodes">Коды возврата $?, set -e, trap</a></li>
+      <li><a href="#files">Работа с файлами и read</a></li>
+      <li><a href="#pipes">Pipe и перенаправление потоков</a></li>
+      <li><a href="#grep">grep — поиск по тексту</a></li>
+      <li><a href="#sed">sed — потоковый редактор</a></li>
+      <li><a href="#awk">awk — обработка колонок</a></li>
+      <li><a href="#autorun">Автозапуск: cron, systemd timers</a></li>
+      <li><a href="#bestpractices">Best practices и ShellCheck</a></li>
+      <li><a href="#cheatsheet">Шпаргалка команд</a></li>
+    </ol>
+  </div>
+
+  <!-- 01 -->
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое Bash и зачем DevOps</h2>
+    <p><strong>Bash</strong> (Bourne Again SHell) — командная оболочка и язык скриптов, дефолтный shell в большинстве Linux-дистрибутивов. Bash интерпретирует команды интерактивно (когда ты пишешь их в терминал) и выполняет скрипты — текстовые файлы с последовательностью команд.</p>
+
+    <h3>Почему это критично для DevOps</h3>
+    <ul>
+      <li><strong>Entry point контейнеров.</strong> Docker <code>ENTRYPOINT</code> и <code>CMD</code> часто — bash-скрипты, готовящие окружение перед стартом приложения.</li>
+      <li><strong>CI/CD pipelines.</strong> Каждый шаг GitHub Actions / GitLab CI — это shell-команда. Без bash ты ограничен готовыми actions и не можешь склеить что-то нетривиальное.</li>
+      <li><strong>Ansible.</strong> Модули <code>shell</code> / <code>command</code> — это bash. Custom facts, raw-задачи, диагностика на хосте — всё bash.</li>
+      <li><strong>Эксплуатация.</strong> Бэкапы, ротация логов, мониторинг, деплой, healthcheck'и — это десятки коротких скриптов в <code>/usr/local/bin</code>.</li>
+      <li><strong>Глубже понять Linux.</strong> Каждый скрипт — это файлы, процессы, переменные окружения, права. Bash — это «клей» между утилитами.</li>
+    </ul>
+
+    <h3>Bash vs sh vs zsh</h3>
+    <table class="compare">
+      <tr><th>Оболочка</th><th>Где встречается</th><th>Особенности</th></tr>
+      <tr><td><code>sh</code></td><td>Alpine, минимальные образы Docker, POSIX-окружение</td><td>Минимум фич, нет <code>[[ ]]</code>, массивов, <code>local</code></td></tr>
+      <tr><td><code>bash</code></td><td>Ubuntu, Debian, CentOS, macOS (старый)</td><td>Стандарт DevOps. Массивы, <code>[[ ]]</code>, process substitution</td></tr>
+      <tr><td><code>zsh</code></td><td>macOS (с 2019), интерактивно</td><td>Удобнее в терминале, но не для скриптов — несовместимости</td></tr>
+    </table>
+
+    <div class="callout info">
+      <div class="callout-label">// Важно</div>
+      Если первая строка скрипта <code>#!/bin/sh</code>, скрипт исполнится оболочкой <code>sh</code>, даже если ты разрабатывал его в bash. На Alpine это <code>/bin/sh → busybox ash</code>, где половина bash-синтаксиса не работает. Для bash всегда пиши <code>#!/usr/bin/env bash</code>.
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section class="note-section" id="shebang">
+    <h2><span class="num">// 02</span>Shebang, права, запуск скрипта</h2>
+
+    <h3>Структура скрипта</h3>
+<pre><code><span class="cmt">#!/usr/bin/env bash</span>
+<span class="cmt"># script.sh — описание что делает скрипт</span>
+<span class="cmt"># Автор: kirill@devops</span>
+
+<span class="kw">set</span> -euo pipefail   <span class="cmt"># строгий режим, см. секцию 10</span>
+
+<span class="kw">echo</span> <span class="str">"Hello, $USER"</span>
+</code></pre>
+
+    <h3>Shebang — первая строка</h3>
+    <p>Это «магическая» строка <code>#!path</code>, говорящая ядру какой интерпретатор запускать. Без неё ядро попытается выполнить файл как ELF-бинарь и упадёт.</p>
+    <ul>
+      <li><code>#!/bin/bash</code> — старый стиль. Работает, но в некоторых системах (BSD, минимальный busybox) bash лежит не в <code>/bin</code>.</li>
+      <li><code>#!/usr/bin/env bash</code> — современный и портативный. <code>env</code> найдёт bash в <code>PATH</code>.</li>
+      <li><code>#!/bin/sh</code> — POSIX-совместимый shell. Используй когда скрипт должен работать в Alpine / контейнерах без bash.</li>
+    </ul>
+
+    <h3>Права на исполнение</h3>
+<pre><code><span class="kw">chmod</span> +x script.sh        <span class="cmt"># дать всем право исполнять</span>
+<span class="kw">chmod</span> 755 script.sh       <span class="cmt"># rwxr-xr-x — владелец полные, остальные читать/исполнять</span>
+<span class="kw">ls</span> -l script.sh
+<span class="cmt"># -rwxr-xr-x  1 kirill kirill  256 may 16 12:00 script.sh</span>
+</code></pre>
+
+    <h3>Способы запуска</h3>
+<pre><code><span class="cmt"># 1. С shebang и +x — обычный запуск</span>
+./script.sh
+
+<span class="cmt"># 2. Явно через интерпретатор (shebang и +x не нужны)</span>
+<span class="kw">bash</span> script.sh
+
+<span class="cmt"># 3. source — выполнить в ТЕКУЩЕМ shell (переменные останутся после)</span>
+<span class="kw">source</span> script.sh
+. script.sh                  <span class="cmt"># синоним</span>
+
+<span class="cmt"># 4. Если скрипт лежит в каталоге из PATH — просто по имени</span>
+script.sh
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Ловушка</div>
+      <code>./script.sh</code> запускает скрипт в <strong>дочернем процессе</strong>, поэтому переменные/cd внутри него не повлияют на твою сессию. Если нужно повлиять на текущий shell (например, активировать venv) — используй <code>source</code>.
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section class="note-section" id="vars">
+    <h2><span class="num">// 03</span>Переменные и типы данных</h2>
+
+    <h3>Объявление</h3>
+<pre><code>name=<span class="str">"kirill"</span>           <span class="cmt"># ПРОБЕЛОВ ВОКРУГ = БЫТЬ НЕ ДОЛЖНО!</span>
+age=29
+greeting=<span class="str">"Hello, $name"</span>
+
+<span class="kw">echo</span> <span class="str">"$name"</span>            <span class="cmt"># kirill</span>
+<span class="kw">echo</span> <span class="str">"${name}_admin"</span>     <span class="cmt"># kirill_admin (фигурные скобки для границ)</span>
+</code></pre>
+
+    <h3>Bash не типизирован — но есть declare</h3>
+    <p>Любая переменная в bash — это <strong>строка</strong>. Но можно подсказать bash трактовать её иначе:</p>
+<pre><code><span class="kw">declare</span> -i  count=10         <span class="cmt"># integer — целое число</span>
+<span class="kw">declare</span> -r  PI=3.14           <span class="cmt"># readonly — не перезаписать</span>
+<span class="kw">declare</span> -a  arr               <span class="cmt"># indexed array</span>
+<span class="kw">declare</span> -A  map               <span class="cmt"># associative array (Bash 4+)</span>
+<span class="kw">declare</span> -x  EXPORTED=<span class="str">"value"</span>  <span class="cmt"># экспорт в окружение, = export</span>
+</code></pre>
+
+    <h3>Окружение и export</h3>
+<pre><code>FOO=<span class="str">"bar"</span>                  <span class="cmt"># локальная переменная shell, дочерним процессам НЕ видна</span>
+<span class="kw">export</span> FOO=<span class="str">"bar"</span>           <span class="cmt"># теперь видна всем дочерним процессам</span>
+<span class="kw">env</span> | <span class="kw">grep</span> FOO            <span class="cmt"># посмотреть все экспортированные</span>
+<span class="kw">unset</span> FOO                   <span class="cmt"># удалить</span>
+</code></pre>
+
+    <h3>Полезные встроенные переменные</h3>
+    <table class="compare">
+      <tr><th>Переменная</th><th>Что хранит</th></tr>
+      <tr><td><code>$HOME</code></td><td>Домашний каталог пользователя</td></tr>
+      <tr><td><code>$USER</code></td><td>Имя пользователя</td></tr>
+      <tr><td><code>$PWD</code></td><td>Текущий каталог</td></tr>
+      <tr><td><code>$PATH</code></td><td>Список каталогов поиска исполняемых файлов</td></tr>
+      <tr><td><code>$SHELL</code></td><td>Путь к текущему shell</td></tr>
+      <tr><td><code>$HOSTNAME</code></td><td>Имя хоста</td></tr>
+      <tr><td><code>$RANDOM</code></td><td>Случайное число 0–32767</td></tr>
+      <tr><td><code>$LINENO</code></td><td>Номер текущей строки в скрипте</td></tr>
+      <tr><td><code>$BASH_VERSION</code></td><td>Версия Bash</td></tr>
+    </table>
+
+    <h3>Массивы</h3>
+<pre><code><span class="cmt"># Indexed array</span>
+fruits=(<span class="str">"apple"</span> <span class="str">"banana"</span> <span class="str">"cherry"</span>)
+<span class="kw">echo</span> <span class="str">"${fruits[0]}"</span>         <span class="cmt"># apple</span>
+<span class="kw">echo</span> <span class="str">"${fruits[@]}"</span>         <span class="cmt"># все элементы</span>
+<span class="kw">echo</span> <span class="str">"${#fruits[@]}"</span>        <span class="cmt"># длина (3)</span>
+fruits+=(<span class="str">"date"</span>)             <span class="cmt"># добавить</span>
+<span class="kw">unset</span> <span class="str">"fruits[1]"</span>           <span class="cmt"># удалить элемент</span>
+
+<span class="cmt"># Associative array (как dict)</span>
+<span class="kw">declare</span> -A server
+server[host]=<span class="str">"prod-01"</span>
+server[ip]=<span class="str">"10.0.0.5"</span>
+<span class="kw">echo</span> <span class="str">"${server[host]}"</span>       <span class="cmt"># prod-01</span>
+<span class="kw">echo</span> <span class="str">"${!server[@]}"</span>         <span class="cmt"># все ключи: host ip</span>
+</code></pre>
+
+    <h3>Подстановка с дефолтами и проверками</h3>
+<pre><code><span class="kw">echo</span> <span class="str">"${VAR:-default}"</span>       <span class="cmt"># если VAR пуст — вернуть "default"</span>
+<span class="kw">echo</span> <span class="str">"${VAR:=default}"</span>       <span class="cmt"># если VAR пуст — присвоить "default"</span>
+<span class="kw">echo</span> <span class="str">"${VAR:?обязательная переменная}"</span>  <span class="cmt"># упасть с ошибкой если пусто</span>
+<span class="kw">echo</span> <span class="str">"${VAR:+есть значение}"</span>  <span class="cmt"># вернуть строку ТОЛЬКО если VAR не пуст</span>
+
+<span class="cmt"># Манипуляции со строкой</span>
+path=<span class="str">"/var/log/nginx.log"</span>
+<span class="kw">echo</span> <span class="str">"${path##*/}"</span>           <span class="cmt"># nginx.log  (после последнего /)</span>
+<span class="kw">echo</span> <span class="str">"${path%.*}"</span>            <span class="cmt"># /var/log/nginx  (до последней .)</span>
+<span class="kw">echo</span> <span class="str">"${path/log/LOG}"</span>        <span class="cmt"># замена первого совпадения</span>
+<span class="kw">echo</span> <span class="str">"${path//log/LOG}"</span>       <span class="cmt"># замена всех совпадений</span>
+<span class="kw">echo</span> <span class="str">"${#path}"</span>              <span class="cmt"># длина строки</span>
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Совет</div>
+      Используй <code>"${VAR:?описание}"</code> в начале скрипта чтобы гарантировать что важные переменные заданы. Падать рано — лучше, чем работать с пустым значением и грохнуть продакшен.
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="note-section" id="quotes">
+    <h2><span class="num">// 04</span>Кавычки и подстановка</h2>
+
+    <p>Кавычки — самая частая ошибка новичков. Правило: <strong>всегда</strong> заключай переменные в двойные кавычки, кроме случаев когда осознанно хочешь обратное.</p>
+
+    <h3>Двойные кавычки <code>"..."</code></h3>
+<pre><code>name=<span class="str">"Kirill Eagle"</span>
+<span class="kw">echo</span> <span class="str">"Привет, $name"</span>        <span class="cmt"># Привет, Kirill Eagle</span>
+<span class="kw">echo</span> <span class="str">"Сегодня $(date +%F)"</span>   <span class="cmt"># Подстановка команды работает</span>
+</code></pre>
+    <p>Сохраняют переменные, command substitution, экранирование. Это дефолт.</p>
+
+    <h3>Одинарные кавычки <code>'...'</code></h3>
+<pre><code><span class="kw">echo</span> '<span class="str">$name стоит $100</span>'      <span class="cmt"># дословно: $name стоит $100</span>
+</code></pre>
+    <p>Литерал. <strong>Никаких</strong> подстановок. Используй для регулярок, awk-программ, jq-фильтров.</p>
+
+    <h3>Без кавычек — опасно</h3>
+<pre><code>file=<span class="str">"my report.txt"</span>
+<span class="kw">rm</span> $file        <span class="cmt"># BUG! Удалит файлы 'my' и 'report.txt' (word splitting)</span>
+<span class="kw">rm</span> <span class="str">"$file"</span>      <span class="cmt"># OK: один файл "my report.txt"</span>
+</code></pre>
+
+    <h3>Command substitution</h3>
+<pre><code>now=$(<span class="kw">date</span> +%Y-%m-%d)
+<span class="kw">echo</span> <span class="str">"Бэкап: backup-$now.tar.gz"</span>
+
+<span class="cmt"># Старый синтаксис (не используй):</span>
+now=`date +%Y-%m-%d`         <span class="cmt"># работает, но плохо вкладывается</span>
+</code></pre>
+
+    <h3>Arithmetic substitution</h3>
+<pre><code><span class="kw">echo</span> $((2 + 3 * 4))           <span class="cmt"># 14</span>
+count=5
+total=$((count * 2 + 1))     <span class="cmt"># 11</span>
+
+<span class="cmt"># Внутри (( )) переменные без $ — это удобно</span>
+<span class="kw">if</span> (( count &gt; 3 )); <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"много"</span>
+<span class="kw">fi</span>
+</code></pre>
+
+    <h3>Brace expansion и pathname expansion</h3>
+<pre><code><span class="kw">echo</span> file{1,2,3}.txt          <span class="cmt"># file1.txt file2.txt file3.txt</span>
+<span class="kw">echo</span> {01..05}                 <span class="cmt"># 01 02 03 04 05</span>
+<span class="kw">echo</span> {a..e}                   <span class="cmt"># a b c d e</span>
+
+<span class="kw">ls</span> *.log                     <span class="cmt"># pathname expansion (glob)</span>
+<span class="kw">ls</span> log_2025-??-??.txt        <span class="cmt"># ? = один символ</span>
+</code></pre>
+  </section>
+
+  <!-- 05 -->
+  <section class="note-section" id="if">
+    <h2><span class="num">// 05</span>Условия: if / elif / else</h2>
+
+    <h3>Базовый синтаксис</h3>
+<pre><code><span class="kw">if</span> [[ <span class="str">"$USER"</span> == <span class="str">"root"</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"вы root"</span>
+<span class="kw">elif</span> [[ <span class="str">"$USER"</span> == <span class="str">"kirill"</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"привет, шеф"</span>
+<span class="kw">else</span>
+  <span class="kw">echo</span> <span class="str">"кто ты вообще"</span>
+<span class="kw">fi</span>
+</code></pre>
+
+    <h3>[ vs [[ vs (( — какую скобку выбрать</h3>
+    <table class="compare">
+      <tr><th>Конструкция</th><th>Для чего</th><th>Заметки</th></tr>
+      <tr><td><code>[ ... ]</code></td><td>POSIX test, классика</td><td>Старо, требует кавычек на переменные</td></tr>
+      <tr><td><code>[[ ... ]]</code></td><td>Bash-расширение для строк/файлов</td><td><strong>Дефолт в bash.</strong> Безопаснее, поддержка regex и логических операторов</td></tr>
+      <tr><td><code>(( ... ))</code></td><td>Арифметика</td><td>Сравнения чисел: <code>&lt; &gt; == != &lt;= &gt;=</code></td></tr>
+    </table>
+
+    <h3>Сравнение строк</h3>
+<pre><code><span class="kw">if</span> [[ <span class="str">"$a"</span> == <span class="str">"$b"</span> ]]; ...   <span class="cmt"># равны</span>
+<span class="kw">if</span> [[ <span class="str">"$a"</span> != <span class="str">"$b"</span> ]]; ...   <span class="cmt"># не равны</span>
+<span class="kw">if</span> [[ -z <span class="str">"$a"</span> ]]; ...        <span class="cmt"># пустая строка</span>
+<span class="kw">if</span> [[ -n <span class="str">"$a"</span> ]]; ...        <span class="cmt"># НЕ пустая</span>
+<span class="kw">if</span> [[ <span class="str">"$a"</span> == prod* ]]; ...   <span class="cmt"># wildcard</span>
+<span class="kw">if</span> [[ <span class="str">"$a"</span> =~ ^[0-9]+$ ]]; ...<span class="cmt"># regex (только с [[ ]])</span>
+</code></pre>
+
+    <h3>Сравнение чисел</h3>
+<pre><code><span class="kw">if</span> (( count &gt; 10 )); ...       <span class="cmt"># современный</span>
+<span class="kw">if</span> [[ <span class="str">"$count"</span> -gt 10 ]]; ...   <span class="cmt"># аналог через -gt</span>
+
+<span class="cmt"># Операторы -gt -lt -ge -le -eq -ne</span>
+</code></pre>
+
+    <h3>Проверка файлов</h3>
+<pre><code><span class="kw">if</span> [[ -f <span class="str">"/etc/passwd"</span> ]]; ...    <span class="cmt"># обычный файл существует</span>
+<span class="kw">if</span> [[ -d <span class="str">"/var/log"</span> ]]; ...       <span class="cmt"># каталог</span>
+<span class="kw">if</span> [[ -e <span class="str">"/path"</span> ]]; ...          <span class="cmt"># существует любой тип</span>
+<span class="kw">if</span> [[ -r <span class="str">"$file"</span> ]]; ...          <span class="cmt"># читаемый</span>
+<span class="kw">if</span> [[ -w <span class="str">"$file"</span> ]]; ...          <span class="cmt"># писeмый</span>
+<span class="kw">if</span> [[ -x <span class="str">"$file"</span> ]]; ...          <span class="cmt"># исполняемый</span>
+<span class="kw">if</span> [[ -s <span class="str">"$file"</span> ]]; ...          <span class="cmt"># непустой</span>
+<span class="kw">if</span> [[ <span class="str">"$a"</span> -nt <span class="str">"$b"</span> ]]; ...      <span class="cmt"># a новее b</span>
+</code></pre>
+
+    <h3>Логические операторы</h3>
+<pre><code><span class="kw">if</span> [[ -f <span class="str">"$f"</span> &amp;&amp; -r <span class="str">"$f"</span> ]]; ...
+<span class="kw">if</span> [[ <span class="str">"$env"</span> == prod || <span class="str">"$env"</span> == staging ]]; ...
+<span class="kw">if</span> ! [[ -d <span class="str">"$dir"</span> ]]; ...      <span class="cmt"># отрицание</span>
+</code></pre>
+
+    <h3>Краткая форма</h3>
+<pre><code><span class="kw">mkdir</span> -p logs &amp;&amp; <span class="kw">echo</span> <span class="str">"ok"</span>   <span class="cmt"># && — если предыдущее вернуло 0</span>
+<span class="kw">test</span> -f file.txt || <span class="kw">touch</span> file.txt  <span class="cmt"># || — если вернуло ненулевой</span>
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Ловушка</div>
+      <code>[ $a == $b ]</code> без кавычек упадёт если <code>$a</code> пустой или содержит пробелы. Внутри <code>[[ ]]</code> это безопаснее, но кавычки всё равно ставь — это спасёт от глобинга.
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="note-section" id="case">
+    <h2><span class="num">// 06</span>Конструкция case</h2>
+
+    <p>Когда условий 3+ и они проверяют одну и ту же переменную — <code>case</code> читается намного лучше чем <code>if/elif</code>.</p>
+
+<pre><code><span class="kw">case</span> <span class="str">"$1"</span> <span class="kw">in</span>
+  start)
+    <span class="kw">echo</span> <span class="str">"запускаем сервис"</span>
+    ;;
+  stop)
+    <span class="kw">echo</span> <span class="str">"останавливаем"</span>
+    ;;
+  restart|reload)
+    <span class="kw">echo</span> <span class="str">"перезапуск"</span>
+    ;;
+  status)
+    <span class="kw">echo</span> <span class="str">"статус"</span>
+    ;;
+  *)
+    <span class="kw">echo</span> <span class="str">"usage: $0 {start|stop|restart|status}"</span>
+    <span class="kw">exit</span> 1
+    ;;
+<span class="kw">esac</span>
+</code></pre>
+
+    <ul>
+      <li><code>;;</code> — конец ветки (как <code>break</code> в C).</li>
+      <li><code>|</code> — несколько паттернов в одной ветке.</li>
+      <li><code>*</code> — fallback (как <code>default</code>).</li>
+      <li>Поддерживается glob: <code>prod-*</code>, <code>?.txt</code>, <code>[0-9]*</code>.</li>
+    </ul>
+
+    <h3>Реальный пример — обработка окружения</h3>
+<pre><code>env=<span class="str">"${1:-dev}"</span>
+<span class="kw">case</span> <span class="str">"$env"</span> <span class="kw">in</span>
+  prod*)    api=<span class="str">"https://api.example.com"</span> ;;
+  stag*)    api=<span class="str">"https://staging.example.com"</span> ;;
+  dev|local) api=<span class="str">"http://localhost:8080"</span> ;;
+  *)        <span class="kw">echo</span> <span class="str">"Неизвестное окружение: $env"</span>; <span class="kw">exit</span> 1 ;;
+<span class="kw">esac</span>
+<span class="kw">echo</span> <span class="str">"API: $api"</span>
+</code></pre>
+  </section>
+
+  <!-- 07 -->
+  <section class="note-section" id="loops">
+    <h2><span class="num">// 07</span>Циклы: for, while, until</h2>
+
+    <h3>for — по списку</h3>
+<pre><code><span class="kw">for</span> name <span class="kw">in</span> alice bob charlie; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"Hello, $name"</span>
+<span class="kw">done</span>
+
+<span class="cmt"># По массиву</span>
+servers=(<span class="str">"web-01"</span> <span class="str">"web-02"</span> <span class="str">"db-01"</span>)
+<span class="kw">for</span> srv <span class="kw">in</span> <span class="str">"${servers[@]}"</span>; <span class="kw">do</span>
+  <span class="kw">ssh</span> <span class="str">"$srv"</span> uptime
+<span class="kw">done</span>
+
+<span class="cmt"># По файлам</span>
+<span class="kw">for</span> f <span class="kw">in</span> /var/log/*.log; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"Размер $f: $(stat -c%s "$f") байт"</span>
+<span class="kw">done</span>
+</code></pre>
+
+    <h3>for — C-style</h3>
+<pre><code><span class="kw">for</span> ((i=0; i&lt;5; i++)); <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"итерация $i"</span>
+<span class="kw">done</span>
+</code></pre>
+
+    <h3>seq и диапазоны</h3>
+<pre><code><span class="kw">for</span> i <span class="kw">in</span> $(<span class="kw">seq</span> 1 5); <span class="kw">do</span> <span class="kw">echo</span> <span class="str">"$i"</span>; <span class="kw">done</span>
+<span class="kw">for</span> i <span class="kw">in</span> {1..5}; <span class="kw">do</span> <span class="kw">echo</span> <span class="str">"$i"</span>; <span class="kw">done</span>      <span class="cmt"># brace expansion — быстрее</span>
+<span class="kw">for</span> i <span class="kw">in</span> {0..20..2}; <span class="kw">do</span> <span class="kw">echo</span> <span class="str">"$i"</span>; <span class="kw">done</span>   <span class="cmt"># с шагом 2</span>
+</code></pre>
+
+    <h3>while — пока условие истинно</h3>
+<pre><code>count=0
+<span class="kw">while</span> (( count &lt; 5 )); <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"count=$count"</span>
+  ((count++))
+<span class="kw">done</span>
+
+<span class="cmt"># Бесконечный цикл (выход через break / сигнал)</span>
+<span class="kw">while</span> <span class="kw">true</span>; <span class="kw">do</span>
+  <span class="kw">curl</span> -s healthcheck.url &gt;/dev/null || <span class="kw">echo</span> <span class="str">"DOWN"</span>
+  <span class="kw">sleep</span> 10
+<span class="kw">done</span>
+</code></pre>
+
+    <h3>while read — построчное чтение файла</h3>
+<pre><code><span class="cmt"># Шаблон, который встретишь сотни раз</span>
+<span class="kw">while</span> IFS= <span class="kw">read</span> -r line; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"строка: $line"</span>
+<span class="kw">done</span> &lt; /etc/hosts
+
+<span class="cmt"># С разделителем (CSV)</span>
+<span class="kw">while</span> IFS=, <span class="kw">read</span> -r host ip port; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"$host -&gt; $ip:$port"</span>
+<span class="kw">done</span> &lt; servers.csv
+</code></pre>
+
+    <h3>until — пока условие ложно</h3>
+<pre><code><span class="cmt"># Подождать пока сервис не поднимется</span>
+<span class="kw">until</span> <span class="kw">curl</span> -sf http://localhost:8080/health; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"ждём..."</span>
+  <span class="kw">sleep</span> 2
+<span class="kw">done</span>
+<span class="kw">echo</span> <span class="str">"готово"</span>
+</code></pre>
+
+    <h3>break и continue</h3>
+<pre><code><span class="kw">for</span> srv <span class="kw">in</span> <span class="str">"${servers[@]}"</span>; <span class="kw">do</span>
+  <span class="kw">ping</span> -c1 <span class="str">"$srv"</span> &amp;&gt;/dev/null || <span class="kw">continue</span>   <span class="cmt"># не отвечает — следующий</span>
+  <span class="kw">if</span> [[ <span class="str">"$srv"</span> == <span class="str">"web-99"</span> ]]; <span class="kw">then</span>
+    <span class="kw">break</span>                                  <span class="cmt"># нашли — выходим</span>
+  <span class="kw">fi</span>
+<span class="kw">done</span>
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Ловушка</div>
+      <code>for f in $(ls *.log)</code> сломается на именах с пробелами. Используй <code>for f in *.log</code> — bash сам подставит файлы безопасно. Или <code>find ... -print0 | xargs -0</code> для рекурсии.
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section class="note-section" id="functions">
+    <h2><span class="num">// 08</span>Функции, scope, return</h2>
+
+    <h3>Объявление и вызов</h3>
+<pre><code><span class="cmt"># Способ 1 — POSIX-совместимый</span>
+greet() {
+  <span class="kw">echo</span> <span class="str">"Hello, $1"</span>
+}
+
+<span class="cmt"># Способ 2 — bash-стиль</span>
+<span class="kw">function</span> greet {
+  <span class="kw">echo</span> <span class="str">"Hello, $1"</span>
+}
+
+greet <span class="str">"Kirill"</span>      <span class="cmt"># вызов БЕЗ скобок!</span>
+</code></pre>
+
+    <h3>Аргументы функции</h3>
+    <p>Внутри функции <code>$1 $2 ... $@ $#</code> — это <strong>аргументы функции</strong>, а не скрипта.</p>
+<pre><code>deploy() {
+  <span class="kw">local</span> env=<span class="str">"$1"</span>
+  <span class="kw">local</span> version=<span class="str">"$2"</span>
+  <span class="kw">echo</span> <span class="str">"Деплой $version в $env"</span>
+  <span class="kw">echo</span> <span class="str">"Всего аргументов: $#"</span>
+}
+
+deploy prod v1.2.3
+</code></pre>
+
+    <h3>local и scope</h3>
+<pre><code>x=<span class="str">"глобально"</span>
+
+set_x() {
+  <span class="kw">local</span> x=<span class="str">"локально"</span>     <span class="cmt"># ВАЖНО: иначе перезапишет глобальную</span>
+  <span class="kw">echo</span> <span class="str">"внутри: $x"</span>
+}
+
+set_x
+<span class="kw">echo</span> <span class="str">"снаружи: $x"</span>      <span class="cmt"># "глобально"</span>
+</code></pre>
+
+    <h3>Возврат значения</h3>
+    <p>В bash функция <strong>не возвращает строку</strong>. <code>return N</code> — это код возврата (0–255). Чтобы «вернуть» значение — выводи в stdout и забирай через command substitution.</p>
+<pre><code>get_count() {
+  <span class="kw">echo</span> 42                <span class="cmt"># «возврат» через stdout</span>
+}
+
+n=$(get_count)
+<span class="kw">echo</span> <span class="str">"got $n"</span>
+
+<span class="cmt"># Для статуса успех/провал — return</span>
+is_root() {
+  [[ <span class="str">"$EUID"</span> -eq 0 ]] &amp;&amp; <span class="kw">return</span> 0 || <span class="kw">return</span> 1
+}
+
+<span class="kw">if</span> is_root; <span class="kw">then</span> <span class="kw">echo</span> <span class="str">"root"</span>; <span class="kw">fi</span>
+</code></pre>
+
+    <h3>Передача массива в функцию</h3>
+<pre><code>print_items() {
+  <span class="kw">local</span> arr=(<span class="str">"$@"</span>)
+  <span class="kw">for</span> i <span class="kw">in</span> <span class="str">"${arr[@]}"</span>; <span class="kw">do</span>
+    <span class="kw">echo</span> <span class="str">"- $i"</span>
+  <span class="kw">done</span>
+}
+
+fruits=(apple banana cherry)
+print_items <span class="str">"${fruits[@]}"</span>
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Совет</div>
+      Всегда используй <code>local</code> для всех переменных внутри функции — иначе скрипт превращается в кашу из глобальных переменных, и баги ловятся месяцами.
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section class="note-section" id="args">
+    <h2><span class="num">// 09</span>Аргументы $1, $@, $#, getopts</h2>
+
+    <h3>Базовые переменные позиций</h3>
+    <table class="compare">
+      <tr><th>Переменная</th><th>Что означает</th></tr>
+      <tr><td><code>$0</code></td><td>Имя скрипта (или функции)</td></tr>
+      <tr><td><code>$1, $2, ...</code></td><td>Первый, второй, ... аргумент</td></tr>
+      <tr><td><code>$#</code></td><td>Количество аргументов</td></tr>
+      <tr><td><code>$@</code></td><td>Все аргументы как СПИСОК (правильно с кавычками)</td></tr>
+      <tr><td><code>$*</code></td><td>Все аргументы как ОДНА СТРОКА через $IFS</td></tr>
+      <tr><td><code>$$</code></td><td>PID текущего процесса</td></tr>
+      <tr><td><code>$!</code></td><td>PID последнего фонового процесса</td></tr>
+    </table>
+
+    <h3>Минимальный шаблон скрипта с аргументами</h3>
+<pre><code><span class="cmt">#!/usr/bin/env bash</span>
+<span class="kw">set</span> -euo pipefail
+
+<span class="kw">if</span> [[ $# -lt 2 ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"Usage: $0 &lt;env&gt; &lt;version&gt;"</span> &gt;&amp;2
+  <span class="kw">exit</span> 1
+<span class="kw">fi</span>
+
+env=<span class="str">"$1"</span>
+version=<span class="str">"$2"</span>
+<span class="kw">shift</span> 2                           <span class="cmt"># «сдвинуть» — $3 становится $1</span>
+
+extra_args=(<span class="str">"$@"</span>)                 <span class="cmt"># всё что осталось</span>
+<span class="kw">echo</span> <span class="str">"deploy env=$env ver=$version extras=${extra_args[*]}"</span>
+</code></pre>
+
+    <h3>$@ vs $* — разница</h3>
+<pre><code>show() {
+  <span class="kw">echo</span> <span class="str">"@: $#"</span>
+  <span class="kw">for</span> a <span class="kw">in</span> <span class="str">"$@"</span>; <span class="kw">do</span> <span class="kw">echo</span> <span class="str">"  [$a]"</span>; <span class="kw">done</span>
+  <span class="kw">echo</span> <span class="str">"*:"</span>
+  <span class="kw">for</span> a <span class="kw">in</span> <span class="str">"$*"</span>; <span class="kw">do</span> <span class="kw">echo</span> <span class="str">"  [$a]"</span>; <span class="kw">done</span>
+}
+show <span class="str">"hello world"</span> <span class="str">"foo bar"</span>
+<span class="cmt"># "$@" сохранит границы — 2 элемента
+# "$*" склеит — 1 элемент "hello world foo bar"</span>
+</code></pre>
+
+    <h3>getopts — короткие флаги (-h, -v, -f)</h3>
+<pre><code><span class="kw">while</span> getopts <span class="str">":he:v:f:"</span> opt; <span class="kw">do</span>
+  <span class="kw">case</span> <span class="str">"$opt"</span> <span class="kw">in</span>
+    h) <span class="kw">echo</span> <span class="str">"usage: $0 -e ENV -v VER -f FILE"</span>; <span class="kw">exit</span> 0 ;;
+    e) env=<span class="str">"$OPTARG"</span> ;;
+    v) version=<span class="str">"$OPTARG"</span> ;;
+    f) file=<span class="str">"$OPTARG"</span> ;;
+    \?) <span class="kw">echo</span> <span class="str">"Неизвестный флаг: -$OPTARG"</span> &gt;&amp;2; <span class="kw">exit</span> 1 ;;
+    :)  <span class="kw">echo</span> <span class="str">"Флаг -$OPTARG требует значение"</span> &gt;&amp;2; <span class="kw">exit</span> 1 ;;
+  <span class="kw">esac</span>
+<span class="kw">done</span>
+<span class="kw">shift</span> $((OPTIND - 1))
+
+<span class="kw">echo</span> <span class="str">"env=$env ver=$version file=$file"</span>
+</code></pre>
+
+    <h3>Длинные опции (--flag) — ручной парсинг</h3>
+<pre><code><span class="kw">while</span> [[ $# -gt 0 ]]; <span class="kw">do</span>
+  <span class="kw">case</span> <span class="str">"$1"</span> <span class="kw">in</span>
+    --env)     env=<span class="str">"$2"</span>; <span class="kw">shift</span> 2 ;;
+    --version) version=<span class="str">"$2"</span>; <span class="kw">shift</span> 2 ;;
+    --dry-run) dry_run=1; <span class="kw">shift</span> ;;
+    -h|--help) <span class="kw">echo</span> <span class="str">"usage..."</span>; <span class="kw">exit</span> 0 ;;
+    *)         <span class="kw">echo</span> <span class="str">"Неизвестный аргумент: $1"</span> &gt;&amp;2; <span class="kw">exit</span> 1 ;;
+  <span class="kw">esac</span>
+<span class="kw">done</span>
+</code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// Заметка</div>
+      Для серьёзных CLI пиши на Python с <code>argparse</code> или на Go с <code>cobra</code>. Bash хорош до ~150 строк — потом разрастается и становится непроверяемым.
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="note-section" id="exitcodes">
+    <h2><span class="num">// 10</span>Коды возврата $?, set -e, trap</h2>
+
+    <h3>Что такое exit code</h3>
+    <p>Любая команда возвращает число 0–255. <strong>0 = успех</strong>, всё остальное = ошибка. Это основа всех проверок и пайплайнов.</p>
+<pre><code><span class="kw">ls</span> /etc &gt;/dev/null
+<span class="kw">echo</span> $?                  <span class="cmt"># 0</span>
+
+<span class="kw">ls</span> /nope 2&gt;/dev/null
+<span class="kw">echo</span> $?                  <span class="cmt"># 2 (No such file)</span>
+</code></pre>
+
+    <h3>Типичные коды</h3>
+    <table class="compare">
+      <tr><th>Код</th><th>Значение</th></tr>
+      <tr><td>0</td><td>Успех</td></tr>
+      <tr><td>1</td><td>Общая ошибка</td></tr>
+      <tr><td>2</td><td>Неверный синтаксис / отсутствует файл</td></tr>
+      <tr><td>126</td><td>Команда найдена, но не исполняема</td></tr>
+      <tr><td>127</td><td>Команда не найдена (опечатка в имени)</td></tr>
+      <tr><td>128+N</td><td>Завершено сигналом N (130 = Ctrl+C / SIGINT)</td></tr>
+      <tr><td>137</td><td>Убит SIGKILL (часто — OOM)</td></tr>
+    </table>
+
+    <h3>Принудительный выход</h3>
+<pre><code><span class="kw">if</span> [[ -z <span class="str">"$API_KEY"</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"API_KEY обязателен"</span> &gt;&amp;2
+  <span class="kw">exit</span> 1
+<span class="kw">fi</span>
+</code></pre>
+
+    <h3>set -e, set -u, set -o pipefail — святая троица</h3>
+<pre><code><span class="kw">set</span> -euo pipefail
+<span class="cmt"># -e          выйти при первой ошибке
+# -u          ошибка на использование неопределённой переменной
+# -o pipefail в "a | b | c" статус берётся от первого упавшего, а не последнего</span>
+</code></pre>
+    <p>Эта строка должна быть в каждом твоём скрипте — это +90% надёжности. По умолчанию bash «прощает» ошибки и едет дальше, что приводит к тихим багам в продакшене.</p>
+
+    <h3>set -x — debug</h3>
+<pre><code><span class="kw">set</span> -x          <span class="cmt"># включить трассировку — каждая команда печатается перед запуском</span>
+<span class="kw">ls</span> /etc
+<span class="kw">set</span> +x          <span class="cmt"># выключить</span>
+
+<span class="cmt"># Или из консоли:</span>
+<span class="kw">bash</span> -x script.sh
+</code></pre>
+
+    <h3>trap — обработка сигналов и cleanup</h3>
+<pre><code>tmp=$(<span class="kw">mktemp</span>)
+<span class="kw">trap</span> <span class="str">'rm -f "$tmp"; echo "cleanup done"'</span> EXIT
+
+<span class="cmt"># EXIT срабатывает при любом выходе — нормальном, через exit, через сигнал</span>
+
+<span class="cmt"># Несколько сигналов:</span>
+<span class="kw">trap</span> <span class="str">'echo "получен SIGINT"; exit 130'</span> INT
+<span class="kw">trap</span> <span class="str">'echo "получен SIGTERM"; exit 143'</span> TERM
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Шаблон скрипта</div>
+      Любой production-скрипт начинай так: <code>#!/usr/bin/env bash</code> → <code>set -euo pipefail</code> → <code>trap cleanup EXIT</code>. Это сэкономит тебе десятки часов отладки.
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="note-section" id="files">
+    <h2><span class="num">// 11</span>Работа с файлами и read</h2>
+
+    <h3>Чтение файла построчно</h3>
+<pre><code><span class="kw">while</span> IFS= <span class="kw">read</span> -r line; <span class="kw">do</span>
+  <span class="kw">echo</span> <span class="str">"&gt; $line"</span>
+<span class="kw">done</span> &lt; /etc/hosts
+</code></pre>
+    <ul>
+      <li><code>IFS=</code> — отключить разделитель, чтобы строки не «обрезались».</li>
+      <li><code>-r</code> — не интерпретировать backslash escape'ы.</li>
+      <li><code>&lt; file</code> — перенаправить файл на stdin цикла.</li>
+    </ul>
+
+    <h3>Чтение из пользовательского ввода</h3>
+<pre><code><span class="kw">read</span> -rp <span class="str">"Имя сервера: "</span> server
+<span class="kw">echo</span> <span class="str">"вы ввели: $server"</span>
+
+<span class="kw">read</span> -rsp <span class="str">"Пароль: "</span> pass   <span class="cmt"># -s — не показывать ввод</span>
+<span class="kw">echo</span>
+
+<span class="kw">read</span> -rp <span class="str">"OK? (y/N) "</span> ans
+[[ <span class="str">"$ans"</span> =~ ^[Yy]$ ]] || { <span class="kw">echo</span> <span class="str">"отмена"</span>; <span class="kw">exit</span> 1; }
+</code></pre>
+
+    <h3>Создание и запись</h3>
+<pre><code><span class="kw">echo</span> <span class="str">"строка 1"</span>  &gt;  out.txt    <span class="cmt"># перезапись</span>
+<span class="kw">echo</span> <span class="str">"строка 2"</span>  &gt;&gt; out.txt    <span class="cmt"># дописать</span>
+
+<span class="cmt"># Heredoc — многострочный текст</span>
+<span class="kw">cat</span> &gt; config.yml &lt;&lt;EOF
+server: web-01
+port: 8080
+env: $env
+EOF
+
+<span class="cmt"># &lt;&lt;'EOF' (в кавычках) — БЕЗ подстановки переменных
+cat &gt; raw.txt &lt;&lt;'EOF'
+$HOME останется буквальным
+EOF</span>
+</code></pre>
+
+    <h3>Временные файлы</h3>
+<pre><code>tmp=$(<span class="kw">mktemp</span>)
+tmpdir=$(<span class="kw">mktemp</span> -d)
+<span class="kw">trap</span> <span class="str">'rm -rf "$tmp" "$tmpdir"'</span> EXIT
+
+<span class="cmt"># mktemp создаст уникальное имя в /tmp — безопаснее чем хардкодить</span>
+</code></pre>
+
+    <h3>Базовые утилиты для файлов</h3>
+<pre><code><span class="kw">cat</span> file.txt                  <span class="cmt"># вывести</span>
+<span class="kw">head</span> -n 20 file.txt           <span class="cmt"># первые 20 строк</span>
+<span class="kw">tail</span> -n 20 file.txt           <span class="cmt"># последние 20</span>
+<span class="kw">tail</span> -f /var/log/syslog       <span class="cmt"># следить за дописываемым логом</span>
+<span class="kw">wc</span> -l file.txt                <span class="cmt"># количество строк</span>
+<span class="kw">sort</span> -u file.txt              <span class="cmt"># сортировать + удалить дубли</span>
+<span class="kw">uniq</span> -c file.txt              <span class="cmt"># посчитать дубли (после sort!)</span>
+<span class="kw">cut</span> -d: -f1 /etc/passwd       <span class="cmt"># первый столбец, разделитель :</span>
+<span class="kw">tr</span> <span class="str">'a-z'</span> <span class="str">'A-Z'</span> &lt; file.txt    <span class="cmt"># верхний регистр</span>
+</code></pre>
+  </section>
+
+  <!-- 12 -->
+  <section class="note-section" id="pipes">
+    <h2><span class="num">// 12</span>Pipe и перенаправление потоков</h2>
+
+    <h3>Три стандартных потока</h3>
+    <table class="compare">
+      <tr><th>FD</th><th>Имя</th><th>Что это</th></tr>
+      <tr><td>0</td><td>stdin</td><td>Ввод (обычно клавиатура)</td></tr>
+      <tr><td>1</td><td>stdout</td><td>Обычный вывод</td></tr>
+      <tr><td>2</td><td>stderr</td><td>Ошибки и диагностика</td></tr>
+    </table>
+
+    <h3>Перенаправление</h3>
+<pre><code><span class="kw">cmd</span> &gt; out.txt              <span class="cmt"># stdout в файл (перезапись)</span>
+<span class="kw">cmd</span> &gt;&gt; out.txt             <span class="cmt"># stdout в файл (дописать)</span>
+<span class="kw">cmd</span> 2&gt; err.txt             <span class="cmt"># stderr в файл</span>
+<span class="kw">cmd</span> &gt; out.txt 2&gt; err.txt   <span class="cmt"># раздельно</span>
+<span class="kw">cmd</span> &gt; all.txt 2&gt;&amp;1         <span class="cmt"># stderr В stdout, оба в файл</span>
+<span class="kw">cmd</span> &amp;&gt; all.txt             <span class="cmt"># bash-сокращение для предыдущего</span>
+<span class="kw">cmd</span> &lt; input.txt            <span class="cmt"># файл на stdin</span>
+<span class="kw">cmd</span> &gt; /dev/null            <span class="cmt"># выкинуть stdout</span>
+<span class="kw">cmd</span> &amp;&gt; /dev/null            <span class="cmt"># выкинуть оба</span>
+</code></pre>
+
+    <h3>Pipe — соединение команд</h3>
+<pre><code><span class="kw">ps</span> aux | <span class="kw">grep</span> nginx | <span class="kw">grep</span> -v grep | <span class="kw">awk</span> '{print $2}'
+
+<span class="cmt"># stdout первой команды становится stdin следующей.
+# Каждая команда в pipe выполняется в подпроцессе!</span>
+</code></pre>
+
+    <h3>Особые операторы перенаправления</h3>
+<pre><code><span class="cmt"># Here-string — короткая «подача» строки</span>
+<span class="kw">grep</span> kirill &lt;&lt;&lt; <span class="str">"$line"</span>
+
+<span class="cmt"># Process substitution — подсунуть вывод как «файл»</span>
+<span class="kw">diff</span> &lt;(<span class="kw">ls</span> dir1) &lt;(<span class="kw">ls</span> dir2)
+
+<span class="cmt"># tee — записать в файл И вывести дальше</span>
+<span class="kw">cmd</span> | <span class="kw">tee</span> out.log | <span class="kw">grep</span> ERROR
+<span class="kw">cmd</span> | <span class="kw">tee</span> -a all.log         <span class="cmt"># append вместо overwrite</span>
+</code></pre>
+
+    <h3>Запуск в фоне</h3>
+<pre><code>long_task &amp;             <span class="cmt"># в фон, $! = PID</span>
+<span class="kw">echo</span> <span class="str">"PID: $!"</span>
+
+<span class="kw">wait</span> $!                 <span class="cmt"># дождаться завершения</span>
+
+<span class="cmt"># Параллельный запуск над списком</span>
+<span class="kw">for</span> srv <span class="kw">in</span> <span class="str">"${servers[@]}"</span>; <span class="kw">do</span>
+  ping_check <span class="str">"$srv"</span> &amp;
+<span class="kw">done</span>
+<span class="kw">wait</span>                    <span class="cmt"># дождаться ВСЕХ дочерних</span>
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Ловушка pipefail</div>
+      Без <code>set -o pipefail</code> код возврата пайплайна = код последней команды. <code>false | true</code> вернёт 0, и ошибка <code>false</code> потеряется. Всегда включай pipefail.
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="note-section" id="grep">
+    <h2><span class="num">// 13</span>grep — поиск по тексту</h2>
+
+    <p><code>grep</code> ищет строки по шаблону (регулярное выражение). Это первая утилита, к которой ты потянешься 100500 раз в день.</p>
+
+    <h3>Базовое</h3>
+<pre><code><span class="kw">grep</span> <span class="str">"error"</span> app.log          <span class="cmt"># все строки со словом error</span>
+<span class="kw">grep</span> -i <span class="str">"error"</span> app.log       <span class="cmt"># без учёта регистра</span>
+<span class="kw">grep</span> -v <span class="str">"DEBUG"</span> app.log       <span class="cmt"># инвертировать — все КРОМЕ DEBUG</span>
+<span class="kw">grep</span> -c <span class="str">"error"</span> app.log       <span class="cmt"># только количество совпадений</span>
+<span class="kw">grep</span> -n <span class="str">"error"</span> app.log       <span class="cmt"># с номерами строк</span>
+<span class="kw">grep</span> -l <span class="str">"error"</span> *.log         <span class="cmt"># только имена файлов с совпадением</span>
+</code></pre>
+
+    <h3>Контекст</h3>
+<pre><code><span class="kw">grep</span> -A 3 <span class="str">"error"</span> app.log     <span class="cmt"># 3 строки после</span>
+<span class="kw">grep</span> -B 3 <span class="str">"error"</span> app.log     <span class="cmt"># 3 строки до</span>
+<span class="kw">grep</span> -C 3 <span class="str">"error"</span> app.log     <span class="cmt"># 3 строки до И после</span>
+</code></pre>
+
+    <h3>Регулярки</h3>
+<pre><code><span class="kw">grep</span> -E <span class="str">"^ERROR|FATAL"</span> app.log      <span class="cmt"># -E = extended regex (alt: egrep)</span>
+<span class="kw">grep</span> -E <span class="str">"^[0-9]{4}-[0-9]{2}-[0-9]{2}"</span> log  <span class="cmt"># строки начинающиеся с даты</span>
+<span class="kw">grep</span> -P <span class="str">"\b[A-Z0-9]+\b"</span> file       <span class="cmt"># -P = Perl-style (доступно в GNU grep)</span>
+<span class="kw">grep</span> -F <span class="str">"1.2.3.4"</span> log             <span class="cmt"># -F = фиксированная строка, регулярки не парсятся</span>
+</code></pre>
+
+    <h3>Рекурсия</h3>
+<pre><code><span class="kw">grep</span> -r <span class="str">"TODO"</span> ./src              <span class="cmt"># рекурсивно</span>
+<span class="kw">grep</span> -rn --include=<span class="str">"*.py"</span> <span class="str">"def main"</span> .   <span class="cmt"># только в .py</span>
+<span class="kw">grep</span> -r --exclude-dir=node_modules <span class="str">"key"</span> .
+</code></pre>
+
+    <h3>Реальный пример</h3>
+<pre><code><span class="cmt"># Топ-10 IP в access.log</span>
+<span class="kw">grep</span> -oE <span class="str">"^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"</span> access.log \
+  | <span class="kw">sort</span> | <span class="kw">uniq</span> -c | <span class="kw">sort</span> -rn | <span class="kw">head</span> -10
+</code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// Альтернатива</div>
+      Для рекурсивного поиска в коде попробуй <strong>ripgrep</strong> (<code>rg</code>) — в 10–50 раз быстрее, по умолчанию игнорирует <code>.gitignore</code>. Не везде установлено, но если ты часто шаришь по большим репозиториям — поставь.
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section class="note-section" id="sed">
+    <h2><span class="num">// 14</span>sed — потоковый редактор</h2>
+
+    <p><code>sed</code> читает текст построчно, применяет команды и выводит результат. Идеально для подстановок и быстрых правок файлов.</p>
+
+    <h3>Замена строк</h3>
+<pre><code><span class="kw">sed</span> <span class="str">'s/old/new/'</span>  file.txt        <span class="cmt"># первое вхождение в строке</span>
+<span class="kw">sed</span> <span class="str">'s/old/new/g'</span> file.txt        <span class="cmt"># все вхождения</span>
+<span class="kw">sed</span> <span class="str">'s/old/new/gi'</span> file.txt       <span class="cmt"># + case insensitive</span>
+
+<span class="cmt"># Изменить файл на месте (in-place)</span>
+<span class="kw">sed</span> -i <span class="str">'s/old/new/g'</span> file.txt
+<span class="kw">sed</span> -i.bak <span class="str">'s/old/new/g'</span> file.txt   <span class="cmt"># с бэкапом file.txt.bak</span>
+
+<span class="cmt"># macOS BSD-sed требует пустую строку после -i:</span>
+<span class="kw">sed</span> -i <span class="str">''</span> <span class="str">'s/old/new/g'</span> file.txt
+</code></pre>
+
+    <h3>Другие разделители</h3>
+<pre><code><span class="cmt"># Когда в шаблоне есть /, бери другой разделитель</span>
+<span class="kw">sed</span> <span class="str">'s|/var/log|/tmp|g'</span> file
+<span class="kw">sed</span> <span class="str">'s#http://old.com#https://new.com#g'</span> file
+</code></pre>
+
+    <h3>Удаление и адресация</h3>
+<pre><code><span class="kw">sed</span> <span class="str">'3d'</span> file              <span class="cmt"># удалить 3-ю строку</span>
+<span class="kw">sed</span> <span class="str">'/^#/d'</span> file           <span class="cmt"># удалить строки начинающиеся с #</span>
+<span class="kw">sed</span> <span class="str">'/^$/d'</span> file           <span class="cmt"># удалить пустые строки</span>
+<span class="kw">sed</span> -n <span class="str">'10,20p'</span> file       <span class="cmt"># напечатать только строки 10–20 (-n = тишина)</span>
+<span class="kw">sed</span> <span class="str">'1,3s/foo/bar/'</span> file   <span class="cmt"># замена только в строках 1–3</span>
+</code></pre>
+
+    <h3>Группы и обратные ссылки</h3>
+<pre><code><span class="cmt"># Поменять местами слова</span>
+<span class="kw">echo</span> <span class="str">"kirill devops"</span> | <span class="kw">sed</span> -E <span class="str">'s/(\w+) (\w+)/\2 \1/'</span>
+<span class="cmt"># devops kirill</span>
+
+<span class="cmt"># Извлечь номер версии</span>
+<span class="kw">echo</span> <span class="str">"app version 1.2.3 released"</span> | <span class="kw">sed</span> -E <span class="str">'s/.*version ([0-9.]+).*/\1/'</span>
+<span class="cmt"># 1.2.3</span>
+</code></pre>
+
+    <h3>Несколько команд</h3>
+<pre><code><span class="kw">sed</span> -e <span class="str">'s/foo/bar/g'</span> -e <span class="str">'s/baz/qux/g'</span> file
+<span class="kw">sed</span> <span class="str">'s/foo/bar/g; s/baz/qux/g'</span> file
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Различия GNU и BSD</div>
+      На Linux — GNU sed, на macOS — BSD sed. <code>-i</code> у них работает по-разному (BSD требует параметр). Если пишешь скрипт для обеих платформ — используй <code>sed -i.bak</code> и потом <code>rm</code> бэкап.
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section class="note-section" id="awk">
+    <h2><span class="num">// 15</span>awk — обработка колонок</h2>
+
+    <p><code>awk</code> — это мини-язык программирования. Читает текст построчно, разбивает каждую строку на поля и применяет программу. Идеален для логов, CSV, табличных данных.</p>
+
+    <h3>Базовое</h3>
+<pre><code><span class="kw">awk</span> '{print $1}' file              <span class="cmt"># первое поле каждой строки</span>
+<span class="kw">awk</span> '{print $1, $3}' file          <span class="cmt"># 1-е и 3-е</span>
+<span class="kw">awk</span> '{print NF}' file              <span class="cmt"># количество полей в строке</span>
+<span class="kw">awk</span> '{print NR, $0}' file          <span class="cmt"># NR = номер строки, $0 = вся строка</span>
+</code></pre>
+
+    <h3>Разделитель полей</h3>
+<pre><code><span class="kw">awk</span> -F: '{print $1}' /etc/passwd        <span class="cmt"># разделитель :</span>
+<span class="kw">awk</span> -F, '{print $1, $3}' data.csv       <span class="cmt"># CSV</span>
+<span class="kw">awk</span> 'BEGIN{FS=":"; OFS=" -&gt; "} {print $1, $7}' /etc/passwd
+<span class="cmt"># FS — input separator, OFS — output</span>
+</code></pre>
+
+    <h3>Условия</h3>
+<pre><code><span class="kw">awk</span> '$3 &gt; 100 {print $0}' file              <span class="cmt"># строки где 3-е поле &gt; 100</span>
+<span class="kw">awk</span> '/error/ {print $1, $2}' log            <span class="cmt"># только строки с "error"</span>
+<span class="kw">awk</span> 'NR &gt; 1 {print}' file                   <span class="cmt"># пропустить заголовок CSV</span>
+<span class="kw">awk</span> 'length($0) &gt; 80 {print NR": "$0}' code <span class="cmt"># длинные строки</span>
+</code></pre>
+
+    <h3>Агрегация — реальные задачи</h3>
+<pre><code><span class="cmt"># Сумма значений колонки</span>
+<span class="kw">awk</span> '{sum += $1} END {print sum}' numbers.txt
+
+<span class="cmt"># Среднее</span>
+<span class="kw">awk</span> '{sum += $1; n++} END {print sum/n}' numbers.txt
+
+<span class="cmt"># Группировка — подсчёт IP в логах</span>
+<span class="kw">awk</span> '{ips[$1]++} END {for (ip in ips) print ips[ip], ip}' access.log \
+  | <span class="kw">sort</span> -rn | <span class="kw">head</span>
+
+<span class="cmt"># Топ ошибок</span>
+<span class="kw">awk</span> '/ERROR/ {count[$4]++} END {for (k in count) print count[k], k}' app.log
+</code></pre>
+
+    <h3>BEGIN и END блоки</h3>
+<pre><code><span class="kw">awk</span> '
+  BEGIN { print <span class="str">"=== START ==="</span> }
+  /error/ { errors++ }
+  /warn/  { warns++ }
+  END {
+    print <span class="str">"errors:"</span>, errors
+    print <span class="str">"warns:"</span>,  warns
+  }
+' app.log
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило выбора</div>
+      <strong>grep</strong> — найти строки. <strong>sed</strong> — заменить текст. <strong>awk</strong> — разобрать по полям и посчитать. Если ты пишешь <code>grep | awk</code> — часто достаточно одного awk: <code>awk '/pattern/ {print $2}'</code>.
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section class="note-section" id="autorun">
+    <h2><span class="num">// 16</span>Автозапуск: cron, systemd timers</h2>
+
+    <h3>cron — классика</h3>
+    <p>Демон <code>cron</code> запускает задачи по расписанию. Конфиг — таблица crontab из 5 колонок времени + команда.</p>
+
+<pre><code><span class="kw">crontab</span> -e          <span class="cmt"># открыть редактор crontab текущего юзера</span>
+<span class="kw">crontab</span> -l          <span class="cmt"># показать</span>
+<span class="kw">crontab</span> -r          <span class="cmt"># УДАЛИТЬ все задачи (ОСТОРОЖНО)</span>
+
+<span class="cmt">#  ┌── минута       (0–59)
+#  │ ┌── час         (0–23)
+#  │ │ ┌── день мес  (1–31)
+#  │ │ │ ┌── месяц   (1–12)
+#  │ │ │ │ ┌── день нед (0–7, 0 и 7 — воскресенье)
+#  │ │ │ │ │
+#  * * * * * /path/to/script.sh</span>
+
+*/5 * * * * /usr/local/bin/healthcheck.sh
+0 3   * * * /usr/local/bin/backup.sh
+0 0   * * 0 /usr/local/bin/weekly-report.sh
+@reboot /usr/local/bin/init.sh
+</code></pre>
+
+    <h3>Логирование задач</h3>
+<pre><code><span class="cmt"># Cron по умолчанию шлёт вывод на email. Лучше — в лог:</span>
+*/5 * * * * /usr/local/bin/check.sh &gt;&gt; /var/log/check.log 2&gt;&amp;1
+</code></pre>
+
+    <h3>Системные cron-каталоги</h3>
+<pre><code>/etc/cron.d/         <span class="cmt"># отдельные конфиги, удобно для пакетов</span>
+/etc/cron.hourly/    <span class="cmt"># скрипты — запуск раз в час</span>
+/etc/cron.daily/     <span class="cmt"># раз в сутки</span>
+/etc/cron.weekly/
+/etc/cron.monthly/
+</code></pre>
+
+    <h3>systemd timers — современная замена</h3>
+    <p>В современных дистрибутивах cron часто заменяют на systemd timers. Плюсы: интеграция с журналом (<code>journalctl</code>), управление зависимостями, удобный синтаксис.</p>
+
+    <p>Нужно <strong>два</strong> файла: service (что запускать) и timer (когда).</p>
+
+<pre><code><span class="cmt"># /etc/systemd/system/backup.service</span>
+[Unit]
+Description=Daily backup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup.sh
+</code></pre>
+
+<pre><code><span class="cmt"># /etc/systemd/system/backup.timer</span>
+[Unit]
+Description=Run backup daily at 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+</code></pre>
+
+<pre><code><span class="kw">systemctl</span> daemon-reload
+<span class="kw">systemctl</span> enable --now backup.timer
+<span class="kw">systemctl</span> list-timers       <span class="cmt"># все таймеры</span>
+<span class="kw">journalctl</span> -u backup.service <span class="cmt"># логи выполнения</span>
+</code></pre>
+
+    <table class="compare">
+      <tr><th>cron</th><th>systemd timer</th></tr>
+      <tr><td>Прост, работает везде</td><td>Сложнее настроить, но мощнее</td></tr>
+      <tr><td>Логи теряются если не редиректить</td><td>Логи автоматически в journald</td></tr>
+      <tr><td>Не догонит пропущенный запуск</td><td><code>Persistent=true</code> — догонит после простоя</td></tr>
+      <tr><td>Не контролирует зависимости</td><td>After=, Wants= — можно цеплять к другим юнитам</td></tr>
+    </table>
+  </section>
+
+  <!-- 17 -->
+  <section class="note-section" id="bestpractices">
+    <h2><span class="num">// 17</span>Best practices и ShellCheck</h2>
+
+    <h3>Скелет «правильного» скрипта</h3>
+<pre><code><span class="cmt">#!/usr/bin/env bash
+#
+# backup.sh — ежедневный бэкап /var/data
+# Usage: backup.sh [--dry-run]</span>
+
+<span class="kw">set</span> -euo pipefail
+IFS=$'\n\t'                                  <span class="cmt"># безопасный IFS</span>
+
+readonly SCRIPT_DIR=<span class="str">"$(cd "$(dirname "${BASH_SOURCE[0]}")" &amp;&amp; pwd)"</span>
+readonly LOG=<span class="str">"/var/log/backup.log"</span>
+
+log()  { <span class="kw">echo</span> <span class="str">"[$(date +%F\ %T)] $*"</span> | <span class="kw">tee</span> -a <span class="str">"$LOG"</span>; }
+die()  { <span class="kw">echo</span> <span class="str">"FATAL: $*"</span> &gt;&amp;2; <span class="kw">exit</span> 1; }
+
+cleanup() {
+  <span class="kw">local</span> rc=$?
+  log <span class="str">"cleanup, exit=$rc"</span>
+  <span class="kw">rm</span> -rf <span class="str">"${tmp:-}"</span>
+}
+<span class="kw">trap</span> cleanup EXIT
+
+main() {
+  tmp=$(<span class="kw">mktemp</span> -d) || die <span class="str">"mktemp failed"</span>
+  log <span class="str">"backup started in $tmp"</span>
+  <span class="cmt"># ...</span>
+  log <span class="str">"done"</span>
+}
+
+main <span class="str">"$@"</span>
+</code></pre>
+
+    <h3>Правила, которые сэкономят тебе нервы</h3>
+    <ol>
+      <li><strong>Всегда</strong> <code>set -euo pipefail</code> в начале.</li>
+      <li><strong>Всегда</strong> кавычки вокруг переменных: <code>"$var"</code>, <code>"$@"</code>, <code>"${arr[@]}"</code>.</li>
+      <li>Имена переменных: <code>UPPER_CASE</code> для констант/окружения, <code>lower_case</code> для локальных.</li>
+      <li>Функции — всё через <code>local</code>.</li>
+      <li>Проверки в начале: что нужные команды есть (<code>command -v jq &gt;/dev/null || die "jq missing"</code>), что переменные заданы.</li>
+      <li>Не пиши скрипты длиннее ~200 строк — переходи на Python.</li>
+      <li>Логируй с timestamp в файл, ошибки в <code>stderr</code> (<code>&gt;&amp;2</code>).</li>
+      <li>Идемпотентность: запуск дважды должен давать тот же результат.</li>
+    </ol>
+
+    <h3>ShellCheck — обязательный линтер</h3>
+<pre><code><span class="cmt"># Установка</span>
+<span class="kw">sudo</span> apt install shellcheck
+<span class="kw">brew</span> install shellcheck
+
+<span class="cmt"># Запуск</span>
+<span class="kw">shellcheck</span> script.sh
+</code></pre>
+    <p>ShellCheck подскажет почти все типичные ошибки: незакавыченные переменные, неэкранированные регулярки, <code>cd "$dir" || exit</code> и т.д. Запускай его перед каждым коммитом — в идеале как pre-commit hook или в CI.</p>
+
+    <div class="callout tip">
+      <div class="callout-label">// Главное правило</div>
+      Bash — это инструмент для «склейки» утилит, не для бизнес-логики. Когда начинают появляться вложенные структуры, JSON, парсинг — переходи на Python. Bash для оркестрации в 50 строк, не для приложений.
+    </div>
+  </section>
+
+  <!-- 18 -->
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Шпаргалка команд</h2>
+
+    <h3>Старт скрипта</h3>
+<pre><code><span class="cmt">#!/usr/bin/env bash</span>
+<span class="kw">set</span> -euo pipefail
+<span class="kw">trap</span> 'rm -f <span class="str">"$tmp"</span>' EXIT
+</code></pre>
+
+    <h3>Переменные</h3>
+<pre><code>x=value                       <span class="cmt"># без пробелов вокруг =</span>
+<span class="kw">echo</span> <span class="str">"$x"</span>                     <span class="cmt"># всегда в "..."</span>
+<span class="kw">echo</span> <span class="str">"${x:-default}"</span>          <span class="cmt"># дефолт</span>
+<span class="kw">export</span> VAR=<span class="str">"value"</span>            <span class="cmt"># в окружение</span>
+<span class="kw">readonly</span> CONST=<span class="str">"42"</span>           <span class="cmt"># константа</span>
+</code></pre>
+
+    <h3>Условия</h3>
+<pre><code>[[ -f file ]]                 <span class="cmt"># файл существует</span>
+[[ -z <span class="str">"$x"</span> ]]                  <span class="cmt"># пусто</span>
+[[ <span class="str">"$a"</span> == <span class="str">"$b"</span> ]]              <span class="cmt"># строки</span>
+(( a &gt; b ))                   <span class="cmt"># числа</span>
+[[ <span class="str">"$s"</span> =~ ^[0-9]+$ ]]         <span class="cmt"># regex</span>
+</code></pre>
+
+    <h3>Циклы</h3>
+<pre><code><span class="kw">for</span> i <span class="kw">in</span> {1..10}; <span class="kw">do</span> ...; <span class="kw">done</span>
+<span class="kw">for</span> f <span class="kw">in</span> *.log; <span class="kw">do</span> ...; <span class="kw">done</span>
+<span class="kw">while</span> IFS= <span class="kw">read</span> -r line; <span class="kw">do</span> ...; <span class="kw">done</span> &lt; file
+</code></pre>
+
+    <h3>Аргументы</h3>
+<pre><code>$0  имя скрипта
+$1 $2 ...  позиционные
+$#  количество
+<span class="str">"$@"</span>  все как список
+<span class="kw">shift</span>  сдвинуть
+</code></pre>
+
+    <h3>Перенаправление</h3>
+<pre><code>&gt; file    &gt;&gt; file    2&gt; err   2&gt;&amp;1   &amp;&gt; all   &lt; file
+| pipe    &lt;&lt;&lt; string    &lt;(cmd) process-sub    &gt;(cmd)
+</code></pre>
+
+    <h3>Текст</h3>
+<pre><code><span class="kw">grep</span> -E pattern file
+<span class="kw">sed</span> -i <span class="str">'s/old/new/g'</span> file
+<span class="kw">awk</span> -F: '{print $1}' file
+<span class="kw">cut</span> -d: -f1 file
+<span class="kw">sort</span> -u | <span class="kw">uniq</span> -c | <span class="kw">sort</span> -rn
+</code></pre>
+
+    <h3>Файлы</h3>
+<pre><code><span class="kw">find</span> /var/log -name <span class="str">"*.log"</span> -mtime +30 -delete
+<span class="kw">xargs</span> -I{} <span class="kw">echo</span> processing {}
+<span class="kw">tar</span> czf backup.tgz dir/
+<span class="kw">rsync</span> -az --delete src/ dest/
+</code></pre>
+
+    <h3>Cron</h3>
+<pre><code>*/5 * * * * /script.sh                <span class="cmt"># каждые 5 минут</span>
+0 3 * * *   /backup.sh &gt;&gt;/var/log/backup.log 2&gt;&amp;1
+@reboot     /init.sh
+</code></pre>
+
+    <h3>Полезно знать</h3>
+<pre><code><span class="kw">command</span> -v jq &gt;/dev/null || die <span class="str">"jq required"</span>
+<span class="kw">which</span> bash
+<span class="kw">type</span> -a ls
+<span class="kw">history</span> | <span class="kw">tail</span>
+!!                <span class="cmt"># повторить последнюю команду</span>
+!$                <span class="cmt"># последний аргумент предыдущей</span>
+^old^new          <span class="cmt"># замена в предыдущей</span>
+</code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/bash$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

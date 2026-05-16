@@ -3,519 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DevOps Roadmap — Kirill</title>
+<title>DevOps Roadmap</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a24;
-    --border: #2a2a3a;
-    --accent: #00ff88;
-    --accent2: #0088ff;
-    --accent3: #ff6b35;
-    --text: #e8e8f0;
-    --text-muted: #6b6b8a;
-    --done: #00ff88;
-    --progress: #0088ff;
-    --todo: #3a3a4a;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Header */
-  header {
-    padding: 60px 0 40px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .header-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 24px;
-  }
-
-  .logo {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--accent);
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    font-family: 'Unbounded', sans-serif;
-    font-size: clamp(32px, 6vw, 64px);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  h1 span {
-    color: var(--accent);
-    display: block;
-  }
-
-  .header-meta {
-    text-align: right;
-  }
-
-  .level-badge {
-    display: inline-block;
-    background: var(--surface2);
-    border: 1px solid var(--accent2);
-    color: var(--accent2);
-    padding: 6px 16px;
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  .score {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 48px;
-    font-weight: 900;
-    color: var(--accent);
-    line-height: 1;
-  }
-
-  .score-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-  }
-
-  /* Overall progress */
-  .overall-progress {
-    padding: 40px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-  }
-
-  .skill-bars {
-    display: grid;
-    gap: 12px;
-  }
-
-  .skill-bar {
-    display: grid;
-    grid-template-columns: 160px 1fr 60px;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .skill-name {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .bar-track {
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 1s ease;
-  }
-
-  .bar-fill.done { background: var(--done); }
-  .bar-fill.progress { background: var(--accent2); }
-  .bar-fill.low { background: var(--accent3); }
-
-  .bar-pct {
-    font-size: 12px;
-    text-align: right;
-  }
-
-  /* Timeline */
-  .timeline {
-    padding: 60px 0;
-  }
-
-  .timeline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 48px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .timeline-title {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-  }
-
-  .total-weeks {
-    font-size: 12px;
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-  }
-
-  /* Module card */
-  .module {
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    gap: 0 32px;
-    margin-bottom: 0;
-    position: relative;
-  }
-
-  .module:not(:last-child) .module-line {
-    position: absolute;
-    left: 39px;
-    top: 50px;
-    bottom: -1px;
-    width: 1px;
-    background: var(--border);
-  }
-
-  .module-number {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 20px;
-  }
-
-  .num-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  .num-circle.status-done {
-    background: rgba(0,255,136,0.15);
-    border: 2px solid var(--done);
-    color: var(--done);
-  }
-
-  .num-circle.status-active {
-    background: rgba(0,136,255,0.15);
-    border: 2px solid var(--accent2);
-    color: var(--accent2);
-    box-shadow: 0 0 20px rgba(0,136,255,0.3);
-  }
-
-  .num-circle.status-todo {
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    color: var(--text-muted);
-  }
-
-  .module-content {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 24px;
-    margin-bottom: 16px;
-    position: relative;
-    transition: border-color 0.2s;
-  }
-
-  .module-content:hover {
-    border-color: var(--accent2);
-  }
-
-  .module-content.status-done { border-left: 3px solid var(--done); }
-  .module-content.status-active { border-left: 3px solid var(--accent2); box-shadow: 0 0 30px rgba(0,136,255,0.1); }
-  .module-content.status-todo { border-left: 3px solid var(--border); }
-
-  .module-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .module-tag {
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 2px;
-  }
-
-  .tag-done { background: rgba(0,255,136,0.1); color: var(--done); }
-  .tag-active { background: rgba(0,136,255,0.1); color: var(--accent2); }
-  .tag-todo { background: var(--surface2); color: var(--text-muted); }
-
-  .module-weeks {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  .module-title {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    line-height: 1.3;
-  }
-
-  .module-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    margin-bottom: 20px;
-  }
-
-  /* Topics grid */
-  .topics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .topic {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 8px 12px;
-    font-size: 11px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    line-height: 1.4;
-  }
-
-  .topic-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  .dot-done { background: var(--done); }
-  .dot-active { background: var(--accent2); }
-  .dot-todo { background: var(--text-muted); }
-
-  /* Tasks */
-  .tasks {
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
-  }
-
-  .tasks-label {
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-  }
-
-  .task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .task {
-    font-size: 11px;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .task::before {
-    content: '→';
-    color: var(--accent);
-    flex-shrink: 0;
-  }
-
-  .task.done-task {
-    color: rgba(0,255,136,0.5);
-    text-decoration: line-through;
-  }
-
-  .task.done-task::before { content: '✓'; }
-
-  /* Module line connector */
-  .module-line { display: none; }
-
-  /* Stats footer */
-  .stats-footer {
-    padding: 48px 0;
-    border-top: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 32px;
-  }
-
-  .stat-item { }
-
-  .stat-value {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 36px;
-    font-weight: 900;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-
-  .stat-label {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  /* Salary section */
-  .salary-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 32px;
-    margin: 48px 0;
-  }
-
-  .salary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    margin-top: 24px;
-  }
-
-  .salary-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 20px;
-  }
-
-  .salary-level {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-  }
-
-  .salary-amount {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 4px;
-  }
-
-  .salary-rub {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  footer {
-    padding: 32px 0;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .footer-left {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  .footer-right {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  .footer-right a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .module { animation: fadeIn 0.5s ease both; }
-  .module:nth-child(1) { animation-delay: 0.1s; }
-  .module:nth-child(2) { animation-delay: 0.15s; }
-  .module:nth-child(3) { animation-delay: 0.2s; }
-  .module:nth-child(4) { animation-delay: 0.25s; }
-  .module:nth-child(5) { animation-delay: 0.3s; }
-  .module:nth-child(6) { animation-delay: 0.35s; }
-  .module:nth-child(7) { animation-delay: 0.4s; }
-  .module:nth-child(8) { animation-delay: 0.45s; }
-  .module:nth-child(9) { animation-delay: 0.5s; }
-  .module:nth-child(10) { animation-delay: 0.55s; }
-  .module:nth-child(11) { animation-delay: 0.6s; }
-  .module:nth-child(12) { animation-delay: 0.65s; }
-
-  @media (max-width: 600px) {
-    .module { grid-template-columns: 50px 1fr; gap: 0 16px; }
-    .skill-bar { grid-template-columns: 100px 1fr 40px; }
-    .salary-grid { grid-template-columns: 1fr; }
-    .header-inner { flex-direction: column; align-items: flex-start; }
-    .header-meta { text-align: left; }
-  }
-</style>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 
-<div class="container">
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~$</span></div>
+    <div class="topnav-links">
+      <a href="#top">Главная</a>
+      <a href="#assessment">Оценка</a>
+      <a href="#plan">План</a>
+      <a href="#notes">Конспекты</a>
+      <a href="#salary">Зарплаты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container" id="top">
 
   <!-- Header -->
   <header>
@@ -526,61 +34,111 @@
       </div>
       <div class="header-meta">
         <div class="level-badge">Junior → Middle</div>
-        <div class="score">41%</div>
-        <div class="score-label">текущий уровень по тестированию</div>
       </div>
+    </div>
+    <div class="header-meta">
+        <div>Старт: 11/05/2026</div>
+      </div>
+    <div class="hero-subtitle">
+      Из системного администрирования в DevOps. 24 недели · 12 модулей · ~168 дней практики.
+      Дневная декомпозиция, учебные материалы и трекинг прогресса в одном месте.
+    </div>
+    <div class="hero-cta">
+      <a href="#assessment">→ К текущей оценке</a>
+      <a href="#plan" class="secondary">→ К плану обучения</a>
     </div>
   </header>
 
-  <!-- Overall progress -->
-  <div class="overall-progress">
-    <div class="section-label">// Текущий уровень по блокам</div>
-    <div class="skill-bars">
-      <div class="skill-bar">
-        <div class="skill-name">Linux</div>
-        <div class="bar-track"><div class="bar-fill done" style="width:70%"></div></div>
-        <div class="bar-pct" style="color:var(--done)">70%</div>
+  <!-- Assessment: единая приборная панель -->
+  <div class="overall-progress" id="assessment">
+    <div class="timeline-header">
+      <div class="timeline-title">Текущая оценка</div>
+      <div class="total-weeks">// 8 технологий · 12 модулей · 24 недели</div>
+    </div>
+
+    <div class="kpi-bar">
+      <div class="kpi-card kpi-hero">
+        <div class="kpi-value">41%</div>
+        <div class="kpi-label">Средний уровень<br>по технологиям</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Сети</div>
-        <div class="bar-track"><div class="bar-fill done" style="width:80%"></div></div>
-        <div class="bar-pct" style="color:var(--done)">80%</div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:var(--done)">2</div>
+        <div class="kpi-label">Модуля<br>завершено</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Git</div>
-        <div class="bar-track"><div class="bar-fill progress" style="width:60%"></div></div>
-        <div class="bar-pct" style="color:var(--accent2)">60%</div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:var(--accent2)">1</div>
+        <div class="kpi-label">В процессе<br>сейчас</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Docker</div>
-        <div class="bar-track"><div class="bar-fill low" style="width:20%"></div></div>
-        <div class="bar-pct" style="color:var(--accent3)">20%</div>
+      <div class="kpi-card">
+        <div class="kpi-value" style="color:var(--text-muted)">9</div>
+        <div class="kpi-label">Модулей<br>впереди</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Ansible</div>
-        <div class="bar-track"><div class="bar-fill low" style="width:10%"></div></div>
-        <div class="bar-pct" style="color:var(--accent3)">10%</div>
+      <div class="kpi-card">
+        <div class="kpi-value">24</div>
+        <div class="kpi-label">Недель<br>до Middle</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Prometheus</div>
-        <div class="bar-track"><div class="bar-fill low" style="width:15%"></div></div>
-        <div class="bar-pct" style="color:var(--accent3)">15%</div>
+    </div>
+
+    <div class="skill-bars-block">
+      <div class="section-label">// Уровень по 8 ключевым технологиям</div>
+      <div class="skill-bars">
+        <div class="skill-bar">
+          <div class="skill-name">Linux</div>
+          <div class="bar-track"><div class="bar-fill done" style="width:70%"></div></div>
+          <div class="bar-pct" style="color:var(--done)">70%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Сети</div>
+          <div class="bar-track"><div class="bar-fill done" style="width:80%"></div></div>
+          <div class="bar-pct" style="color:var(--done)">80%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Git</div>
+          <div class="bar-track"><div class="bar-fill progress" style="width:60%"></div></div>
+          <div class="bar-pct" style="color:var(--accent2)">60%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Docker</div>
+          <div class="bar-track"><div class="bar-fill low" style="width:20%"></div></div>
+          <div class="bar-pct" style="color:var(--accent3)">20%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Ansible</div>
+          <div class="bar-track"><div class="bar-fill low" style="width:10%"></div></div>
+          <div class="bar-pct" style="color:var(--accent3)">10%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Prometheus</div>
+          <div class="bar-track"><div class="bar-fill low" style="width:15%"></div></div>
+          <div class="bar-pct" style="color:var(--accent3)">15%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Kubernetes</div>
+          <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
+          <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+        </div>
+        <div class="skill-bar">
+          <div class="skill-name">Terraform</div>
+          <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
+          <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+        </div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Kubernetes</div>
-        <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
-        <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+    </div>
+
+    <div class="assessment-summary">
+      <div class="summary-card strong">
+        <div class="summary-label">// Сильные стороны</div>
+        <div class="summary-list">Linux · Сети · Git — твёрдый фундамент сисадмина, можно сразу строить поверх него DevOps-стек.</div>
       </div>
-      <div class="skill-bar">
-        <div class="skill-name">Terraform</div>
-        <div class="bar-track"><div class="bar-fill low" style="width:0%"></div></div>
-        <div class="bar-pct" style="color:var(--text-muted)">0%</div>
+      <div class="summary-card gap">
+        <div class="summary-label">// Точки роста</div>
+        <div class="summary-list">Docker · Ansible · Prometheus · Kubernetes · Terraform — основные модули плана, на них уходит ~75% времени.</div>
       </div>
     </div>
   </div>
 
   <!-- Timeline -->
-  <div class="timeline">
+  <div class="timeline" id="plan">
     <div class="timeline-header">
       <div class="timeline-title">План обучения</div>
       <div class="total-weeks">~24 недели · 6 месяцев</div>
@@ -608,6 +166,37 @@
           <div class="topic"><span class="topic-dot dot-done"></span>Firewall / SELinux</div>
           <div class="topic"><span class="topic-dot dot-done"></span>Пакетный менеджер DNF</div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Установка Fedora 44, разметка диска, post-install</div><div class="day-time">~3ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">Файловая система: FHS, mount, df, du</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3–4</div><div class="day-title">Базовые команды: ls, cd, cp, mv, find, locate</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Права доступа: chmod, chown, umask, ACL</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">Процессы: ps, top, htop, kill, nice, renice</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7</div><div class="day-title">systemd: units, services, journalctl</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">SSH: ключи, ~/.ssh/config, port forwarding</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9</div><div class="day-title">firewalld, SELinux (audit2allow, semanage)</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 10</div><div class="day-title">DNF: пакеты, репозитории, локальная установка</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 11–12</div><div class="day-title">cron, systemd timers, logrotate, rsync</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">Переменные окружения, PATH, .bashrc</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Сводное задание: настройка сервера с нуля</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://docs.fedoraproject.org/" target="_blank" rel="noopener">Fedora Documentation — официальный гайд</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://wiki.archlinux.org/" target="_blank" rel="noopener">ArchWiki — применимо к любому Linux</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.linuxbible.org/" target="_blank" rel="noopener">«Linux Bible» — Christopher Negus</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/@ADV-IT" target="_blank" rel="noopener">ADV-IT — серии по Linux на YouTube</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/hub/sysadm/" target="_blank" rel="noopener">Habr — хаб «Системное администрирование»</a></div>
+          </div>
+        </details>
+        <div class="module-note-link todo">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Готовится — фундамент уже освоен, конспект придёт позже</span>
+        </div>
       </div>
     </div>
 
@@ -633,6 +222,39 @@
           <div class="topic"><span class="topic-dot dot-active"></span>rebase vs merge</div>
           <div class="topic"><span class="topic-dot dot-active"></span>cherry-pick</div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">git init, clone, add, commit, status</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">История: log, diff, show, blame</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3</div><div class="day-title">Ветки: branch, checkout, switch</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 4</div><div class="day-title">merge: fast-forward, no-ff, squash</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Конфликты: разрешение, mergetool</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">.gitignore, .gitattributes, hooks</div><div class="day-time">~1ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7</div><div class="day-title">Remote: push, pull, fetch, tracking</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">GitHub: SSH ключи, репозитории, README</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9–10</div><div class="day-title">Rebase vs merge, interactive rebase</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">cherry-pick, revert, reset --soft/--hard</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12</div><div class="day-title">Stash, tags, релизы</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">Reflog, восстановление потерянных коммитов</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Pull Request workflow, code review</div><div class="day-time">~2ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://git-scm.com/book/ru/v2" target="_blank" rel="noopener">Pro Git (бесплатно, на русском)</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://git-scm.com/docs" target="_blank" rel="noopener">Официальная документация git-scm.com</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://learngitbranching.js.org/?locale=ru_RU" target="_blank" rel="noopener">Learn Git Branching — интерактивный тренажёр</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://www.atlassian.com/git/tutorials" target="_blank" rel="noopener">Atlassian Git Tutorials — лучший справочник</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://ohshitgit.com/ru" target="_blank" rel="noopener">«Чёрт, гит» — как чинить распространённые ошибки</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/git.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">init/add/commit, ветки, merge, конфликты, rebase, cherry-pick, reflog, PR workflow</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -669,6 +291,36 @@
             <div class="task">Скрипт деплоя приложения с проверками</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1–2</div><div class="day-title">Переменные, типы, export, кавычки</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 3–4</div><div class="day-title">Условия if/elif/else, test, case</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 5–6</div><div class="day-title">Циклы for, while, until, break/continue</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 7</div><div class="day-title">Функции, scope, return values</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">Аргументы $1/$@/$#, коды возврата $?</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9–10</div><div class="day-title">Pipe, перенаправление, работа с файлами</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 11–12</div><div class="day-title">sed, awk, grep — текстовая обработка</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">Скрипты автозапуска, systemd timers, cron</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Финал: скрипт мониторинга диска + бэкап</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.gnu.org/software/bash/manual/" target="_blank" rel="noopener">GNU Bash Reference Manual</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://tldp.org/LDP/abs/html/" target="_blank" rel="noopener">TLDP Advanced Bash-Scripting Guide</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://linuxcommand.org/tlcl.php" target="_blank" rel="noopener">«The Linux Command Line» W. Shotts (бесплатно)</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://missing.csail.mit.edu/" target="_blank" rel="noopener">MIT Missing Semester — shell tools</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://explainshell.com/" target="_blank" rel="noopener">explainshell.com — разбор любой shell-команды</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://www.shellcheck.net/" target="_blank" rel="noopener">ShellCheck — линтер для bash-скриптов</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/bash.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Переменные, циклы, функции, getopts, pipe, sed/awk/grep, cron и systemd timers</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -707,6 +359,43 @@
             <div class="task">Поднять полный стек app+postgres+redis+nginx одной командой</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Контейнеры vs ВМ, архитектура Docker</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2–3</div><div class="day-title">Dockerfile: FROM, RUN, COPY, CMD, ENTRYPOINT</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 4</div><div class="day-title">ARG vs ENV, .dockerignore</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Слои и Layer cache, порядок инструкций</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6–7</div><div class="day-title">Multi-stage builds, distroless образы</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">Volumes vs bind mounts vs tmpfs</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9–10</div><div class="day-title">Networking: bridge, host, custom networks</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 11–12</div><div class="day-title">Docker Compose синтаксис, depends_on, profiles</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">Healthchecks, restart policies</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Secrets, переменные окружения, .env</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 15</div><div class="day-title">Registry: Docker Hub, GHCR, push/pull</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 16</div><div class="day-title">Trivy: сканирование уязвимостей образа</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 17</div><div class="day-title">Диагностика: OOMKilled, exit codes, logs</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 18</div><div class="day-title">Docker Desktop, Compose watch, BuildKit</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 19–20</div><div class="day-title">Финал: оптимизация образа 900МБ → 80МБ</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 21</div><div class="day-title">Финал: стек app+postgres+redis+nginx</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://docs.docker.com/" target="_blank" rel="noopener">docs.docker.com — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://labs.play-with-docker.com/" target="_blank" rel="noopener">Play with Docker — браузерная песочница</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://nigelpoulton.com/books/" target="_blank" rel="noopener">«Docker Deep Dive» Nigel Poulton</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/playlist?list=PLy7NrYWoggjzSIlwxeBbcgfAdYoxCIrM2" target="_blank" rel="noopener">TechWorld with Nana — Docker Tutorial</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/companies/ruvds/articles/438796/" target="_blank" rel="noopener">Habr — Docker для разработчиков</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://docs.docker.com/develop/develop-images/dockerfile_best-practices/" target="_blank" rel="noopener">Best practices for writing Dockerfiles</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/docker.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Dockerfile, layer cache, multi-stage, networking, volumes, Compose, healthchecks, Trivy, OOMKilled</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -740,6 +429,37 @@
             <div class="task">Matrix builds — тестирование на разных версиях Python</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Концепция CI/CD, plain vs trunk-based</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2–3</div><div class="day-title">GitHub Actions: workflows, jobs, steps</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 4</div><div class="day-title">GitHub Actions: matrix, кэш, conditions</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Secrets, environments, OIDC</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6–7</div><div class="day-title">GitLab CI: stages, jobs, rules</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">GitLab Runners: shared vs self-hosted</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9</div><div class="day-title">Артефакты и кэширование зависимостей</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 10</div><div class="day-title">Docker build в pipeline, buildx, кэш</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">Деплой по SSH, appleboy/ssh-action</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12–13</div><div class="day-title">Финал: push → tests → build → deploy</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Финал: автодеплой документации на Pages</div><div class="day-time">~2ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://docs.github.com/en/actions" target="_blank" rel="noopener">GitHub Actions — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://docs.gitlab.com/ee/ci/" target="_blank" rel="noopener">GitLab CI/CD — официальная документация</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/watch?v=R8_veQiYBjI" target="_blank" rel="noopener">TechWorld with Nana — GitHub Actions crash course</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/hub/devops/" target="_blank" rel="noopener">Habr — хаб «DevOps» (раздел CI/CD)</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://github.com/sdras/awesome-actions" target="_blank" rel="noopener">Awesome Actions — каталог готовых GitHub Actions</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/cicd.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">workflows, jobs, runners, secrets, matrix, environments, GitLab CI</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -776,6 +496,42 @@
             <div class="task">Деплой на РЕД ОС через Ansible из GitLab CI</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1–2</div><div class="day-title">Архитектура Ansible, agentless подход, SSH</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 3</div><div class="day-title">Inventory: INI/YAML, группы, переменные</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 4</div><div class="day-title">Playbook структура, hosts, tasks</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Модули: apt, dnf, copy, template, file</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6–7</div><div class="day-title">Variables, facts, gather_facts</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">Conditionals (when) и loops (with_items)</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9–10</div><div class="day-title">Roles: структура, dependencies, meta</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">Handlers и notify, listen</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12–13</div><div class="day-title">Jinja2 templates: filters, циклы</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Ansible Vault: шифрование секретов</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 15</div><div class="day-title">Идемпотентность, check mode (--check)</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 16</div><div class="day-title">Tags и --limit для частичного запуска</div><div class="day-time">~1ч</div></div>
+            <div class="day-card"><div class="day-badge">День 17</div><div class="day-title">Ansible Galaxy и Collections</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 18</div><div class="day-title">Dynamic inventory из облака/CMDB</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 19–20</div><div class="day-title">Финал: настройка нового сервера с нуля</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 21</div><div class="day-title">Финал: деплой на РЕД ОС из GitLab CI</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://docs.ansible.com/" target="_blank" rel="noopener">docs.ansible.com — официальная документация</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.oreilly.com/library/view/ansible-up-and/9781098109141/" target="_blank" rel="noopener">«Ansible: Up & Running» Lorin Hochstein</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/playlist?list=PL2_OBreMn7FqZkvMYt6ATmgC0KAGGJNAN" target="_blank" rel="noopener">Jeff Geerling — Ansible 101 (15 эпизодов)</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://galaxy.ansible.com/" target="_blank" rel="noopener">Ansible Galaxy — каталог готовых ролей</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/articles/494738/" target="_blank" rel="noopener">Habr — Ansible с нуля</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/ansible.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">inventory, playbooks, roles, Jinja2, Vault, идемпотентность, Molecule</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -812,6 +568,39 @@
             <div class="task">Zabbix: мониторинг РЕД ОС виртуалки</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Концепция метрик: Counter, Gauge, Histogram</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">Prometheus: архитектура, установка, scrape</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3–4</div><div class="day-title">PromQL: запросы, функции, агрегации</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Node Exporter, recording rules</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">Alerting rules, Alertmanager, routing</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7–8</div><div class="day-title">Grafana: дашборды, переменные, templating</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 9</div><div class="day-title">Grafana Loki: сбор логов, LogQL</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 10</div><div class="day-title">Zabbix: архитектура, server + frontend</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">Zabbix агенты, шаблоны, items</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12</div><div class="day-title">Zabbix триггеры, действия, уведомления</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">SLO/SLI/SLA: error budget на практике</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Финал: дашборд + алерты для приложения</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://prometheus.io/docs/" target="_blank" rel="noopener">Prometheus — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://grafana.com/docs/" target="_blank" rel="noopener">Grafana — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.zabbix.com/documentation/current/ru/manual" target="_blank" rel="noopener">Zabbix — документация на русском</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.oreilly.com/library/view/prometheus-up/9781492034131/" target="_blank" rel="noopener">«Prometheus: Up & Running» Brian Brazil</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/watch?v=h4Sl21AKiDg" target="_blank" rel="noopener">TechWorld with Nana — Prometheus Tutorial</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://sre.google/sre-book/service-level-objectives/" target="_blank" rel="noopener">Google SRE Book — SLO/SLI/SLA</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/monitoring.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Prometheus, PromQL, exporters, Alertmanager, Grafana, Loki, Tempo, SLO</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -845,6 +634,40 @@
             <div class="task">Мониторинг Redis через Prometheus Redis Exporter</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Redis: установка, redis-cli, конфиг</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">Типы: string, list, set, hash, sorted set</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3</div><div class="day-title">Persistence: RDB, AOF, гибриды</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 4</div><div class="day-title">Redis как кэш в Python (TTL, инвалидация)</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">Pub/Sub, Streams (XADD/XREAD)</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">Redis Sentinel: HA, failover</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7</div><div class="day-title">Redis Cluster: шардирование</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">RabbitMQ: установка, плагины, management UI</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9</div><div class="day-title">Exchanges: direct, fanout, topic, headers</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 10</div><div class="day-title">Queues, bindings, routing keys</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">Producer/Consumer на Python (pika)</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12</div><div class="day-title">Acknowledgments, retry, dead letter</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">Мониторинг: Redis Exporter + RabbitMQ Exporter</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Финал: очередь задач + кэш в проекте</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://redis.io/docs/" target="_blank" rel="noopener">redis.io/docs — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.rabbitmq.com/getstarted.html" target="_blank" rel="noopener">RabbitMQ Tutorials (6 шагов)</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://redis.io/learn/develop/redis-in-action" target="_blank" rel="noopener">«Redis in Action» Josiah Carlson (бесплатно)</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/@CodeOpinion" target="_blank" rel="noopener">CodeOpinion — RabbitMQ patterns</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/companies/otus/articles/734820/" target="_blank" rel="noopener">Habr — Redis и RabbitMQ в проде</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/redis-rabbitmq.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Redis типы, persistence, Sentinel, Cluster, AMQP, exchanges, quorum queues, HA</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -884,6 +707,47 @@
             <div class="task">Prometheus в Kubernetes через Helm</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">Архитектура: control plane, worker nodes</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">Установка minikube / kind / k3d</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3–4</div><div class="day-title">kubectl и Pods: жизненный цикл</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 5</div><div class="day-title">ReplicaSet и Deployment</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">Service: ClusterIP, NodePort, LoadBalancer</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7–8</div><div class="day-title">ConfigMap и Secrets, монтирование</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 9–10</div><div class="day-title">Volumes, PV, PVC, StorageClass</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 11</div><div class="day-title">Namespaces, kubectx, kubens</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 12–13</div><div class="day-title">Ingress: nginx, cert-manager, TLS</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Liveness, Readiness, Startup probes</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 15–16</div><div class="day-title">HPA и metrics-server</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 17</div><div class="day-title">Rolling update, rollback, стратегии</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 18–19</div><div class="day-title">Helm: templates, values, lifecycle</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 20</div><div class="day-title">Helm чарты: helpers, dependencies</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 21</div><div class="day-title">RBAC: Roles, Bindings, ServiceAccount</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 22</div><div class="day-title">NetworkPolicy: изоляция трафика</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 23</div><div class="day-title">Диагностика: CrashLoop, OOM, ImagePullErr</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 24</div><div class="day-title">kube-prometheus-stack через Helm</div><div class="day-time">~3ч</div></div>
+            <div class="day-card"><div class="day-badge">День 25–26</div><div class="day-title">Финал: deploy приложения через свой Helm chart</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 27–28</div><div class="day-title">Финал: HPA + zero-downtime rolling update</div><div class="day-time">~3ч/день</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://kubernetes.io/docs/tutorials/" target="_blank" rel="noopener">kubernetes.io/docs/tutorials — официальные туториалы</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.manning.com/books/kubernetes-in-action-second-edition" target="_blank" rel="noopener">«Kubernetes in Action» Marko Lukša (2-е изд.)</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/watch?v=X48VuDVv0do" target="_blank" rel="noopener">TechWorld with Nana — K8s Full Course</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://helm.sh/docs/" target="_blank" rel="noopener">Helm — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://kubernetes.io/docs/reference/kubectl/cheatsheet/" target="_blank" rel="noopener">kubectl cheat sheet</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/hub/kubernetes/" target="_blank" rel="noopener">Habr — хаб «Kubernetes»</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/kubernetes.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Pods, Deployments, Services, Ingress, Helm, Kustomize, RBAC, HPA, NetworkPolicy</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -917,6 +781,38 @@
             <div class="task">Полный стек: VPS + DNS + SSL + приложение через Terraform</div>
           </div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по дням ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">День 1</div><div class="day-title">IaC философия, terraform vs Ansible</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 2</div><div class="day-title">HCL: init, plan, apply, destroy</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 3</div><div class="day-title">Providers, версионирование</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 4–5</div><div class="day-title">Resources, атрибуты, depends_on</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 6</div><div class="day-title">Variables, outputs, locals</div><div class="day-time">~2ч</div></div>
+            <div class="day-card"><div class="day-badge">День 7</div><div class="day-title">State: local vs remote (S3, GitLab)</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 8</div><div class="day-title">Modules: структура, сорсинг</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 9</div><div class="day-title">Data sources и for_each</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 10</div><div class="day-title">Workspaces, окружения dev/stage/prod</div><div class="day-time">~1.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 11–12</div><div class="day-title">Финал: VPS в Selectel или Yandex Cloud</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">День 13</div><div class="day-title">DNS + Let's Encrypt SSL через TF</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">День 14</div><div class="day-title">Финал: полный стек одной командой</div><div class="day-time">~3ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://developer.hashicorp.com/terraform/tutorials" target="_blank" rel="noopener">HashiCorp Tutorials — официальный обучающий курс</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.terraformupandrunning.com/" target="_blank" rel="noopener">«Terraform: Up & Running» Yevgeniy Brikman</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://registry.terraform.io/" target="_blank" rel="noopener">Terraform Registry — провайдеры и модули</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://registry.terraform.io/providers/yandex-cloud/yandex/latest/docs" target="_blank" rel="noopener">Yandex Cloud Provider — для российских VPS</a></div>
+            <div class="resource"><span class="resource-type video">VIDEO</span><a href="https://www.youtube.com/watch?v=SLB_c_ayRMo" target="_blank" rel="noopener">TechWorld with Nana — Terraform Course</a></div>
+          </div>
+        </details>
+        <a class="module-note-link" href="notes/terraform.html">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">HCL, providers, resources, state, backends, modules, workspaces, plan/apply</span>
+          <span class="mnl-arrow">→ Открыть</span>
+        </a>
       </div>
     </div>
 
@@ -942,6 +838,32 @@
           <div class="topic"><span class="topic-dot dot-todo"></span>Сетевой стек ядра</div>
           <div class="topic"><span class="topic-dot dot-todo"></span>Параметры sysctl</div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по темам ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Сигналы, SIGTERM/SIGKILL, обработка в shell</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Системные вызовы, strace, ltrace</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">2–3 дня</div><div class="day-title">cgroups v1/v2, namespaces (как работает Docker)</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">2–3 дня</div><div class="day-title">eBPF: bpftrace, основы трассировки</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Профилирование: perf, flamegraphs</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Сетевой стек ядра, conntrack, tc</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1 день</div><div class="day-title">sysctl: tuning сети, файловой системы</div><div class="day-time">~2ч</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://www.brendangregg.com/systems-performance-2nd-edition-book.html" target="_blank" rel="noopener">«Systems Performance» 2nd ed. Brendan Gregg</a></div>
+            <div class="resource"><span class="resource-type book">BOOK</span><a href="https://github.com/0xAX/linux-insides" target="_blank" rel="noopener">Linux Inside — про устройство ядра (бесплатно)</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.brendangregg.com/" target="_blank" rel="noopener">brendangregg.com — perf, eBPF, flamegraphs</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://ebpf.io/" target="_blank" rel="noopener">ebpf.io — что такое eBPF</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://lwn.net/" target="_blank" rel="noopener">LWN.net — глубокие статьи о ядре Linux</a></div>
+          </div>
+        </details>
+        <div class="module-note-link todo">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Бонусный модуль — конспект будет, когда дойдут руки</span>
+        </div>
       </div>
     </div>
 
@@ -965,13 +887,110 @@
           <div class="topic"><span class="topic-dot dot-todo"></span>Zero Trust модель</div>
           <div class="topic"><span class="topic-dot dot-todo"></span>Supply chain security</div>
         </div>
+        <details class="schedule">
+          <summary>// Расписание по темам ▾</summary>
+          <div class="schedule-grid">
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">HashiCorp Vault: secrets engines, dynamic creds</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1 день</div><div class="day-title">Trivy: сканирование образов и репозиториев</div><div class="day-time">~2.5ч</div></div>
+            <div class="day-card"><div class="day-badge">2–3 дня</div><div class="day-title">SAST: SonarQube, Semgrep в CI</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">DAST: OWASP ZAP в pipeline</div><div class="day-time">~2.5ч/день</div></div>
+            <div class="day-card"><div class="day-badge">2–3 дня</div><div class="day-title">OPA и Rego policies, kube-bench</div><div class="day-time">~3ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Zero Trust модель: BeyondCorp принципы</div><div class="day-time">~2ч/день</div></div>
+            <div class="day-card"><div class="day-badge">1–2 дня</div><div class="day-title">Supply chain: SBOM, Sigstore, cosign</div><div class="day-time">~2.5ч/день</div></div>
+          </div>
+        </details>
+        <details class="resources">
+          <summary>// Учебные материалы ▾</summary>
+          <div class="resource-list">
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://developer.hashicorp.com/vault/docs" target="_blank" rel="noopener">HashiCorp Vault — официальная документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://owasp.org/www-project-top-ten/" target="_blank" rel="noopener">OWASP Top 10 — фундамент AppSec</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://aquasecurity.github.io/trivy/" target="_blank" rel="noopener">Trivy — сканер уязвимостей</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.openpolicyagent.org/docs/" target="_blank" rel="noopener">Open Policy Agent (OPA) — документация</a></div>
+            <div class="resource"><span class="resource-type doc">DOC</span><a href="https://www.sigstore.dev/" target="_blank" rel="noopener">Sigstore — подпись артефактов</a></div>
+            <div class="resource"><span class="resource-type article">ARTICLE</span><a href="https://habr.com/ru/hub/infosecurity/" target="_blank" rel="noopener">Habr — хаб «Информационная безопасность»</a></div>
+          </div>
+        </details>
+        <div class="module-note-link todo">
+          <span class="mnl-label">// Конспект</span>
+          <span class="mnl-desc">Бонусный модуль — Vault, Trivy, SAST/DAST, OPA, Zero Trust</span>
+        </div>
       </div>
     </div>
 
   </div><!-- /timeline -->
 
+  <!-- Notes hub -->
+  <div class="notes-section" id="notes">
+    <div class="timeline-header">
+      <div class="timeline-title">Конспекты</div>
+      <div class="total-weeks">// Единый источник по каждому модулю</div>
+    </div>
+    <div class="notes-intro">
+      По каждому модулю — исчерпывающий конспект: концепции, команды, примеры, подводные камни. Идея простая: открыл конспект — и больше никуда лезть не надо. Готовы: Git, Bash, Docker. Остальные — на подходе.
+    </div>
+    <div class="notes-grid">
+      <a class="note-card ready" href="notes/git.html">
+        <div class="note-card-tag">✓ Готов · Модуль 02</div>
+        <div class="note-card-title">Git — Контроль версий</div>
+        <div class="note-card-desc">init/add/commit, ветки, merge, конфликты, rebase, cherry-pick, reflog, PR workflow.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/bash.html">
+        <div class="note-card-tag">✓ Готов · Модуль 03</div>
+        <div class="note-card-title">Bash Scripting</div>
+        <div class="note-card-desc">Переменные, циклы, функции, pipe, sed/awk/grep, cron и systemd timers.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/docker.html">
+        <div class="note-card-tag">✓ Готов · Модуль 04</div>
+        <div class="note-card-title">Docker — Углублённо</div>
+        <div class="note-card-desc">Dockerfile, layer cache, multi-stage, networking, volumes, Compose, healthchecks, Trivy, OOMKilled.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/cicd.html">
+        <div class="note-card-tag">✓ Готов · Модуль 05</div>
+        <div class="note-card-title">CI/CD — Actions &amp; GitLab CI</div>
+        <div class="note-card-desc">Workflows, runners, matrix, environments, OIDC, GitLab CI, стратегии деплоя, security сканеры.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/ansible.html">
+        <div class="note-card-tag">✓ Готов · Модуль 06</div>
+        <div class="note-card-title">Ansible — Автоматизация</div>
+        <div class="note-card-desc">Inventory, playbooks, roles, handlers, Jinja2, Vault, идемпотентность, Molecule, rolling-стратегии.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/monitoring.html">
+        <div class="note-card-tag">✓ Готов · Модуль 07</div>
+        <div class="note-card-title">Мониторинг</div>
+        <div class="note-card-desc">Prometheus, PromQL, exporters, Alertmanager, Grafana, Loki + LogQL, Tempo/OTel, SLO, Zabbix.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/redis-rabbitmq.html">
+        <div class="note-card-tag">✓ Готов · Модуль 08</div>
+        <div class="note-card-title">Redis &amp; RabbitMQ</div>
+        <div class="note-card-desc">Типы данных, persistence, eviction, Sentinel, Cluster; AMQP, exchanges, ack/confirms, quorum queues, мониторинг.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/kubernetes.html">
+        <div class="note-card-tag">✓ Готов · Модуль 09</div>
+        <div class="note-card-title">Kubernetes</div>
+        <div class="note-card-desc">Архитектура, Pods, Deployments, StatefulSets, Services, Ingress, ConfigMap/Secret, PV/PVC, RBAC, HPA, Helm, GitOps.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+      <a class="note-card ready" href="notes/terraform.html">
+        <div class="note-card-tag">✓ Готов · Модуль 10</div>
+        <div class="note-card-title">Terraform</div>
+        <div class="note-card-desc">HCL, providers, resources, state и backends (S3+DynamoDB), модули, workspaces, plan/apply, тестирование, CI/CD.</div>
+        <div class="note-card-arrow">→ Открыть конспект</div>
+      </a>
+    </div>
+  </div>
+
   <!-- Salary section -->
-  <div class="salary-section">
+  <div class="salary-section" id="salary">
+    <div class="timeline-header">
+      <div class="timeline-title">Зарплата</div>
+    </div>
     <div class="section-label">// Зарплатные ожидания по рынку России 2026</div>
     <div class="salary-grid">
       <div class="salary-card">
@@ -989,30 +1008,6 @@
         <div class="salary-amount">300к+</div>
         <div class="salary-rub">руб/месяц</div>
       </div>
-    </div>
-  </div>
-
-  <!-- Stats footer -->
-  <div class="stats-footer">
-    <div class="stat-item">
-      <div class="stat-value" style="color:var(--done)">2</div>
-      <div class="stat-label">Модуля завершено</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" style="color:var(--accent2)">1</div>
-      <div class="stat-label">В процессе</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" style="color:var(--text-muted)">9</div>
-      <div class="stat-label">Впереди</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">24</div>
-      <div class="stat-label">Недель плана</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" style="color:var(--accent3)">41%</div>
-      <div class="stat-label">Текущий уровень</div>
     </div>
   </div>
 

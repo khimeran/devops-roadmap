@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Docker — Углублённо</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/docker$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Docker
+    </div>
+    <h1>Docker — <span>Углублённо</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 04</span>
+      <span>Недели 7–9 · 21 день</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое Docker и зачем он нужен</a></li>
+      <li><a href="#arch">Архитектура: daemon, client, registry</a></li>
+      <li><a href="#cli">Базовые команды CLI</a></li>
+      <li><a href="#dockerfile">Dockerfile — все инструкции</a></li>
+      <li><a href="#argenv">.dockerignore, ARG vs ENV</a></li>
+      <li><a href="#layers">Слои и Layer cache</a></li>
+      <li><a href="#multistage">Multi-stage builds и distroless</a></li>
+      <li><a href="#storage">Volumes vs Bind mounts vs tmpfs</a></li>
+      <li><a href="#network">Docker networking</a></li>
+      <li><a href="#compose">Docker Compose углублённо</a></li>
+      <li><a href="#health">Healthchecks и restart policies</a></li>
+      <li><a href="#secrets">Secrets и переменные окружения</a></li>
+      <li><a href="#registry">Registry — push, pull, теги</a></li>
+      <li><a href="#scan">Сканирование уязвимостей</a></li>
+      <li><a href="#debug">Диагностика: OOMKilled, exit codes, logs</a></li>
+      <li><a href="#buildkit">BuildKit и buildx</a></li>
+      <li><a href="#best">Best practices в продакшне</a></li>
+      <li><a href="#cheatsheet">Шпаргалка команд</a></li>
+    </ol>
+  </div>
+
+  <!-- 01 -->
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое Docker и зачем он нужен</h2>
+    <p><strong>Docker</strong> — платформа для запуска приложений в <strong>контейнерах</strong>. Контейнер — это изолированный процесс на хосте, упакованный вместе со всеми зависимостями (библиотеки, конфиги, бинарь). Тот же образ запускается одинаково на ноутбуке разработчика, в CI и в проде.</p>
+
+    <h3>Контейнер vs Виртуальная Машина</h3>
+    <table class="compare">
+      <tr><th>Параметр</th><th>VM</th><th>Контейнер</th></tr>
+      <tr><td>Ядро</td><td>Своё (полная ОС)</td><td>Общее ядро хоста</td></tr>
+      <tr><td>Размер</td><td>ГБ</td><td>МБ–десятки МБ</td></tr>
+      <tr><td>Старт</td><td>Минуты</td><td>Миллисекунды</td></tr>
+      <tr><td>Изоляция</td><td>Полная (гипервизор)</td><td>Namespaces + cgroups</td></tr>
+      <tr><td>Накладные расходы</td><td>Высокие</td><td>Минимальные</td></tr>
+    </table>
+
+    <h3>Что под капотом</h3>
+    <ul>
+      <li><strong>Linux namespaces</strong> — изоляция: PID (свои процессы), NET (своя сеть), MNT (свои маунты), UTS (своё имя хоста), IPC, USER.</li>
+      <li><strong>cgroups</strong> — ограничения ресурсов: CPU, RAM, IO, сеть.</li>
+      <li><strong>OverlayFS</strong> — слоистая ФС: образ только для чтения + writable-слой контейнера сверху.</li>
+    </ul>
+
+    <h3>Зачем DevOps</h3>
+    <ul>
+      <li><strong>«Работает у меня» — больше не оправдание.</strong> Один артефакт (образ) для всех окружений.</li>
+      <li><strong>Стандарт упаковки.</strong> Kubernetes, ECS, Cloud Run — всё запускает контейнеры.</li>
+      <li><strong>Микросервисы.</strong> 10 сервисов = 10 образов = 10 независимых деплоев.</li>
+      <li><strong>CI как контейнеры.</strong> Каждый шаг GitHub Actions / GitLab CI запускается в контейнере.</li>
+    </ul>
+  </section>
+
+  <!-- 02 -->
+  <section class="note-section" id="arch">
+    <h2><span class="num">// 02</span>Архитектура: daemon, client, registry</h2>
+
+    <h3>Компоненты</h3>
+    <ul>
+      <li><strong>Docker daemon (<code>dockerd</code>)</strong> — фоновый процесс, который реально создаёт контейнеры, образы, сети. Слушает на Unix-сокете <code>/var/run/docker.sock</code>.</li>
+      <li><strong>Docker CLI (<code>docker</code>)</strong> — клиент, отправляющий REST-запросы демону.</li>
+      <li><strong>containerd</strong> — низкоуровневый runtime, которым пользуется daemon. Управляет жизненным циклом контейнеров.</li>
+      <li><strong>runc</strong> — ещё ниже: непосредственно запускает процесс с правильными namespaces/cgroups.</li>
+      <li><strong>Registry</strong> — хранилище образов (Docker Hub, GHCR, GitLab Registry, ECR, приватный Harbor).</li>
+    </ul>
+
+    <h3>Жизненный цикл</h3>
+    <pre><code><span class="cmt"># Образ → контейнер → процесс</span>
+<span class="kw">docker</span> pull nginx:1.27          <span class="cmt"># 1. вытянули образ из registry</span>
+<span class="kw">docker</span> create --name web nginx:1.27   <span class="cmt"># 2. создали контейнер (готов, но не запущен)</span>
+<span class="kw">docker</span> start web              <span class="cmt"># 3. запустили</span>
+<span class="kw">docker</span> stop web               <span class="cmt"># 4. SIGTERM, через 10с SIGKILL</span>
+<span class="kw">docker</span> rm web                 <span class="cmt"># 5. удалили</span>
+
+<span class="cmt"># run = create + start одной командой</span>
+<span class="kw">docker</span> run --name web -d nginx:1.27
+</code></pre>
+
+    <h3>Образ vs контейнер</h3>
+    <ul>
+      <li><strong>Образ</strong> — снапшот файловой системы + метаданные (команда запуска, env, expose). Неизменяемый, состоит из слоёв.</li>
+      <li><strong>Контейнер</strong> — работающий экземпляр образа. Имеет writable-слой поверх образа.</li>
+      <li>Из одного образа можно поднять N контейнеров.</li>
+    </ul>
+  </section>
+
+  <!-- 03 -->
+  <section class="note-section" id="cli">
+    <h2><span class="num">// 03</span>Базовые команды CLI</h2>
+
+    <h3>Запуск</h3>
+<pre><code><span class="kw">docker</span> run -d \                       <span class="cmt"># -d = detached, в фоне</span>
+  --name nginx \                       <span class="cmt"># имя контейнера</span>
+  -p 8080:80 \                         <span class="cmt"># хост:контейнер</span>
+  -v $(pwd)/html:/usr/share/nginx/html \  <span class="cmt"># bind mount</span>
+  -e ENV=prod \                        <span class="cmt"># переменная окружения</span>
+  --restart unless-stopped \           <span class="cmt"># перезапуск</span>
+  --memory 256m --cpus 0.5 \           <span class="cmt"># лимиты</span>
+  nginx:1.27
+</code></pre>
+
+    <h3>Управление</h3>
+<pre><code><span class="kw">docker</span> ps                       <span class="cmt"># запущенные</span>
+<span class="kw">docker</span> ps -a                    <span class="cmt"># все, включая остановленные</span>
+<span class="kw">docker</span> stop &lt;id|name&gt;
+<span class="kw">docker</span> start &lt;id|name&gt;
+<span class="kw">docker</span> restart &lt;id|name&gt;
+<span class="kw">docker</span> rm -f &lt;id|name&gt;          <span class="cmt"># -f = принудительно</span>
+<span class="kw">docker</span> kill &lt;id|name&gt;            <span class="cmt"># SIGKILL немедленно</span>
+</code></pre>
+
+    <h3>Заглянуть внутрь</h3>
+<pre><code><span class="kw">docker</span> logs -f --tail 100 &lt;name&gt;
+<span class="kw">docker</span> exec -it &lt;name&gt; bash         <span class="cmt"># шелл внутри</span>
+<span class="kw">docker</span> exec &lt;name&gt; ps aux           <span class="cmt"># одна команда</span>
+<span class="kw">docker</span> inspect &lt;name&gt;               <span class="cmt"># JSON со всем</span>
+<span class="kw">docker</span> stats                        <span class="cmt"># live CPU/mem/io</span>
+<span class="kw">docker</span> top &lt;name&gt;                   <span class="cmt"># процессы в контейнере</span>
+<span class="kw">docker</span> port &lt;name&gt;                  <span class="cmt"># маппинги портов</span>
+</code></pre>
+
+    <h3>Образы</h3>
+<pre><code><span class="kw">docker</span> images                       <span class="cmt"># локальные</span>
+<span class="kw">docker</span> pull alpine:3.20
+<span class="kw">docker</span> rmi alpine:3.20
+<span class="kw">docker</span> tag myapp:latest registry.example.com/myapp:v1.2
+<span class="kw">docker</span> push registry.example.com/myapp:v1.2
+<span class="kw">docker</span> history nginx:1.27              <span class="cmt"># слои образа</span>
+</code></pre>
+
+    <h3>Очистка</h3>
+<pre><code><span class="kw">docker</span> system df                     <span class="cmt"># сколько занято</span>
+<span class="kw">docker</span> system prune -a --volumes      <span class="cmt"># удалить ВСЁ неиспользуемое</span>
+<span class="kw">docker</span> image prune
+<span class="kw">docker</span> container prune
+<span class="kw">docker</span> volume prune
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Ловушка</div>
+      <code>docker system prune -a</code> удаляет все образы, которые сейчас не используются контейнером. После релиза в проде можно потерять старую версию — будь аккуратен с <code>-a</code> на live-серверах.
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="note-section" id="dockerfile">
+    <h2><span class="num">// 04</span>Dockerfile — все инструкции</h2>
+
+    <p>Dockerfile — рецепт сборки образа. Каждая инструкция создаёт <strong>слой</strong>. Слои кешируются — это критично для скорости пересборки.</p>
+
+    <h3>FROM — базовый образ</h3>
+<pre><code><span class="kw">FROM</span> python:3.12-slim          <span class="cmt"># slim = минимальный debian</span>
+<span class="kw">FROM</span> alpine:3.20                <span class="cmt"># 5MB, musl libc</span>
+<span class="kw">FROM</span> scratch                    <span class="cmt"># пусто, только бинарь — для Go</span>
+<span class="kw">FROM</span> ubuntu:24.04 <span class="kw">AS</span> builder    <span class="cmt"># именованный stage для multi-stage</span>
+</code></pre>
+
+    <h3>RUN — выполнить во время сборки</h3>
+<pre><code><span class="cmt"># Плохо: 3 слоя, мусор apt-cache в образе</span>
+<span class="kw">RUN</span> apt-get update
+<span class="kw">RUN</span> apt-get install -y curl jq
+<span class="kw">RUN</span> rm -rf /var/lib/apt/lists/*
+
+<span class="cmt"># Хорошо: один слой, чисто</span>
+<span class="kw">RUN</span> apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends curl jq \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*
+</code></pre>
+
+    <h3>COPY vs ADD</h3>
+<pre><code><span class="kw">COPY</span> requirements.txt /app/    <span class="cmt"># дефолт — простое копирование</span>
+<span class="kw">COPY</span> --chown=app:app . /app
+<span class="kw">COPY</span> --from=builder /out/app /usr/bin/app   <span class="cmt"># из другого stage</span>
+
+<span class="kw">ADD</span> archive.tar.gz /tmp/         <span class="cmt"># ADD умеет распаковывать и качать URL</span>
+<span class="cmt"># Правило: всегда COPY, ADD только если нужна распаковка tar</span>
+</code></pre>
+
+    <h3>CMD vs ENTRYPOINT</h3>
+    <table class="compare">
+      <tr><th></th><th>CMD</th><th>ENTRYPOINT</th></tr>
+      <tr><td>Что задаёт</td><td>Дефолтные аргументы</td><td>Сам бинарь</td></tr>
+      <tr><td>Переопределение</td><td><code>docker run img &lt;new-cmd&gt;</code></td><td><code>--entrypoint</code></td></tr>
+      <tr><td>Аргументы при run</td><td>Заменяют CMD</td><td>Добавляются к ENTRYPOINT</td></tr>
+    </table>
+<pre><code><span class="cmt"># Шаблон: ENTRYPOINT — программа, CMD — её дефолтные аргументы</span>
+<span class="kw">ENTRYPOINT</span> [<span class="str">"python"</span>, <span class="str">"app.py"</span>]
+<span class="kw">CMD</span> [<span class="str">"--port"</span>, <span class="str">"8080"</span>]
+
+<span class="cmt"># docker run img            → python app.py --port 8080
+# docker run img --port 9000 → python app.py --port 9000</span>
+</code></pre>
+    <p><strong>Exec form</strong> (массив, JSON) — без shell. <strong>Shell form</strong> (<code>CMD echo hi</code>) — через <code>/bin/sh -c</code>. В проде используй exec form, иначе сигналы (SIGTERM) не доходят до приложения.</p>
+
+    <h3>Остальные инструкции</h3>
+<pre><code><span class="kw">WORKDIR</span> /app                <span class="cmt"># рабочий каталог (создаёт если нет)</span>
+<span class="kw">ENV</span> NODE_ENV=production      <span class="cmt"># переменная окружения</span>
+<span class="kw">ARG</span> VERSION=1.0              <span class="cmt"># аргумент сборки --build-arg VERSION=...</span>
+<span class="kw">EXPOSE</span> 8080                  <span class="cmt"># документация — какой порт слушает (не публикует!)</span>
+<span class="kw">VOLUME</span> [<span class="str">"/data"</span>]              <span class="cmt"># точка маунта (анонимный volume)</span>
+<span class="kw">USER</span> app:app                 <span class="cmt"># под каким UID запускать процесс</span>
+<span class="kw">LABEL</span> org.opencontainers.image.source=https://github.com/me/app
+<span class="kw">HEALTHCHECK</span> --interval=10s --timeout=3s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+<span class="kw">STOPSIGNAL</span> SIGTERM
+</code></pre>
+
+    <h3>Минимальный production Dockerfile (Python)</h3>
+<pre><code><span class="kw">FROM</span> python:3.12-slim
+<span class="kw">WORKDIR</span> /app
+<span class="kw">ENV</span> PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+<span class="kw">RUN</span> useradd -r -u 1000 app
+
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="kw">COPY</span> --chown=app:app . .
+<span class="kw">USER</span> app
+
+<span class="kw">EXPOSE</span> 8080
+<span class="kw">HEALTHCHECK</span> CMD curl -f http://localhost:8080/health || exit 1
+<span class="kw">ENTRYPOINT</span> [<span class="str">"python"</span>]
+<span class="kw">CMD</span> [<span class="str">"app.py"</span>]
+</code></pre>
+  </section>
+
+  <!-- 05 -->
+  <section class="note-section" id="argenv">
+    <h2><span class="num">// 05</span>.dockerignore, ARG vs ENV</h2>
+
+    <h3>.dockerignore — без него образ будет огромным</h3>
+    <p>При <code>docker build</code> весь контекст (каталог сборки) отправляется демону. Без <code>.dockerignore</code> туда уедут <code>node_modules</code>, <code>.git</code>, IDE-папки и логи. Это медленно и небезопасно (секреты).</p>
+<pre><code><span class="cmt"># .dockerignore — синтаксис как .gitignore</span>
+.git
+.gitignore
+.env*
+node_modules
+__pycache__
+*.pyc
+.venv
+.idea
+.vscode
+dist
+build
+*.log
+README.md
+</code></pre>
+
+    <h3>ARG vs ENV — разница, на которой ломаются</h3>
+    <table class="compare">
+      <tr><th></th><th>ARG</th><th>ENV</th></tr>
+      <tr><td>Когда задаётся</td><td>При сборке (<code>--build-arg</code>)</td><td>В Dockerfile или <code>-e</code></td></tr>
+      <tr><td>Доступен в RUN</td><td>Да</td><td>Да</td></tr>
+      <tr><td>В runtime контейнера</td><td><strong>Нет</strong></td><td>Да</td></tr>
+      <tr><td>Виден в <code>docker inspect</code></td><td>Нет</td><td>Да</td></tr>
+    </table>
+<pre><code><span class="kw">ARG</span> APP_VERSION=dev
+<span class="kw">ENV</span> APP_VERSION=$APP_VERSION   <span class="cmt"># «прокинуть» ARG в ENV если нужно в runtime</span>
+<span class="kw">RUN</span> <span class="kw">echo</span> <span class="str">"building $APP_VERSION"</span>
+
+<span class="cmt"># Сборка:</span>
+<span class="kw">docker</span> build --build-arg APP_VERSION=1.2.3 -t myapp .
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Опасность</div>
+      Никогда не передавай секреты через <code>--build-arg</code> — они остаются в истории слоёв образа (<code>docker history</code>). Используй <code>--secret</code> (BuildKit, см. секцию 16).
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="note-section" id="layers">
+    <h2><span class="num">// 06</span>Слои и Layer cache</h2>
+
+    <p>Каждая инструкция в Dockerfile создаёт слой — это снапшот diff'а файловой системы. Слои кешируются Docker'ом, и при повторной сборке используются заново, <strong>если</strong> их содержимое и предшественники не изменились.</p>
+
+    <h3>Правило: меняющееся — в конец</h3>
+<pre><code><span class="cmt"># ПЛОХО — любое изменение кода ломает кеш установки зависимостей</span>
+<span class="kw">FROM</span> python:3.12-slim
+<span class="kw">COPY</span> . /app
+<span class="kw">RUN</span> pip install -r /app/requirements.txt   <span class="cmt"># пересборка при каждом коде</span>
+
+<span class="cmt"># ХОРОШО — зависимости в кеше, пока requirements.txt не менялся</span>
+<span class="kw">FROM</span> python:3.12-slim
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+<span class="kw">COPY</span> . .                                     <span class="cmt"># код — в самом конце</span>
+</code></pre>
+
+    <h3>Что инвалидирует кеш</h3>
+    <ul>
+      <li>Изменение содержимого файлов в <code>COPY</code>/<code>ADD</code>.</li>
+      <li>Изменение текста инструкции (даже пробел).</li>
+      <li>Любая инструкция выше — ломает кеш для всех ниже.</li>
+      <li>Смена <code>ARG</code>, на которые ссылается RUN.</li>
+    </ul>
+
+    <h3>Размер образа — простые правила</h3>
+    <ul>
+      <li>Базовый образ: <code>-slim</code> или <code>alpine</code> вместо полного.</li>
+      <li>Объединяй <code>RUN</code>: <code>apt update &amp;&amp; apt install &amp;&amp; rm -rf /var/lib/apt/lists/*</code>.</li>
+      <li>Не оставляй кэш пакетных менеджеров: <code>--no-cache-dir</code> (pip), <code>--no-install-recommends</code> (apt), <code>--no-cache</code> (apk).</li>
+      <li>Multi-stage build — самый сильный приём (см. секцию 7).</li>
+      <li>Не клади в образ исходники тестов, документацию, .git.</li>
+    </ul>
+
+    <h3>Анализ слоёв</h3>
+<pre><code><span class="kw">docker</span> history myapp:latest        <span class="cmt"># слои с размерами</span>
+<span class="kw">docker</span> image inspect myapp:latest    <span class="cmt"># детали</span>
+
+<span class="cmt"># Полезный сторонний инструмент: dive
+# https://github.com/wagoodman/dive</span>
+<span class="kw">dive</span> myapp:latest
+</code></pre>
+  </section>
+
+  <!-- 07 -->
+  <section class="note-section" id="multistage">
+    <h2><span class="num">// 07</span>Multi-stage builds и distroless</h2>
+
+    <p>Идея: один Dockerfile, несколько <code>FROM</code>. В первом stage'е собираем — там есть компиляторы, dev-зависимости. В финальный stage копируем <strong>только готовый артефакт</strong>. В итоге образ становится в десятки раз меньше.</p>
+
+    <h3>Пример: Go</h3>
+<pre><code><span class="cmt"># Stage 1: сборка</span>
+<span class="kw">FROM</span> golang:1.23-alpine <span class="kw">AS</span> builder
+<span class="kw">WORKDIR</span> /src
+<span class="kw">COPY</span> go.mod go.sum ./
+<span class="kw">RUN</span> go mod download
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> CGO_ENABLED=0 go build -ldflags=<span class="str">"-s -w"</span> -o /out/app ./cmd/app
+
+<span class="cmt"># Stage 2: только бинарь</span>
+<span class="kw">FROM</span> gcr.io/distroless/static-debian12
+<span class="kw">COPY</span> --from=builder /out/app /app
+<span class="kw">USER</span> nonroot:nonroot
+<span class="kw">ENTRYPOINT</span> [<span class="str">"/app"</span>]
+</code></pre>
+    <p>Итог: образ ~15МБ вместо ~900МБ.</p>
+
+    <h3>Пример: Node.js</h3>
+<pre><code><span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> deps
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> package*.json ./
+<span class="kw">RUN</span> npm ci --omit=dev
+
+<span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> build
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> package*.json ./
+<span class="kw">RUN</span> npm ci
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> npm run build
+
+<span class="kw">FROM</span> node:20-alpine
+<span class="kw">WORKDIR</span> /app
+<span class="kw">ENV</span> NODE_ENV=production
+<span class="kw">COPY</span> --from=deps /app/node_modules ./node_modules
+<span class="kw">COPY</span> --from=build /app/dist ./dist
+<span class="kw">USER</span> node
+<span class="kw">CMD</span> [<span class="str">"node"</span>, <span class="str">"dist/server.js"</span>]
+</code></pre>
+
+    <h3>Distroless / scratch / alpine — что выбрать</h3>
+    <table class="compare">
+      <tr><th>База</th><th>Размер</th><th>Когда</th></tr>
+      <tr><td><code>scratch</code></td><td>0 МБ</td><td>Полностью статический Go-бинарь</td></tr>
+      <tr><td><code>distroless/static</code></td><td>~2 МБ</td><td>Статический бинарь + CA-сертификаты</td></tr>
+      <tr><td><code>distroless/base</code></td><td>~20 МБ</td><td>Бинарь с glibc</td></tr>
+      <tr><td><code>alpine</code></td><td>~5 МБ</td><td>Когда нужен shell, BusyBox utils, apk</td></tr>
+      <tr><td><code>debian-slim</code></td><td>~75 МБ</td><td>Большая совместимость, glibc</td></tr>
+    </table>
+
+    <div class="callout info">
+      <div class="callout-label">// Alpine vs glibc</div>
+      Alpine использует musl libc — некоторые Python/Node-пакеты с native-extensions ломаются. Если видишь странные ошибки сегфолтов в Alpine — попробуй <code>-slim</code>.
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section class="note-section" id="storage">
+    <h2><span class="num">// 08</span>Volumes vs Bind mounts vs tmpfs</h2>
+
+    <p>Контейнеры эфемерны — данные внутри теряются при <code>docker rm</code>. Чтобы данные пережили контейнер — нужно прокинуть с хоста или из named volume.</p>
+
+    <table class="compare">
+      <tr><th>Тип</th><th>Где хранится</th><th>Когда</th></tr>
+      <tr><td>Named volume</td><td><code>/var/lib/docker/volumes/&lt;name&gt;</code></td><td>Данные приложения (БД, кеш)</td></tr>
+      <tr><td>Bind mount</td><td>Любой путь хоста</td><td>Исходники в dev, конфиги</td></tr>
+      <tr><td>tmpfs</td><td>RAM</td><td>Секреты, временные файлы</td></tr>
+    </table>
+
+    <h3>Named volume</h3>
+<pre><code><span class="kw">docker</span> volume create pgdata
+<span class="kw">docker</span> run -d --name pg \
+  -v pgdata:/var/lib/postgresql/data \
+  postgres:16
+
+<span class="kw">docker</span> volume ls
+<span class="kw">docker</span> volume inspect pgdata
+<span class="kw">docker</span> volume rm pgdata
+</code></pre>
+
+    <h3>Bind mount</h3>
+<pre><code><span class="cmt"># Для разработки — код хоста виден контейнеру live</span>
+<span class="kw">docker</span> run -d --name app \
+  -v $(pwd):/app \
+  -w /app \
+  node:20-alpine npm run dev
+
+<span class="cmt"># С флагом :ro контейнер не сможет писать</span>
+<span class="kw">docker</span> run -v /etc/nginx.conf:/etc/nginx/nginx.conf:ro nginx
+</code></pre>
+
+    <h3>tmpfs</h3>
+<pre><code><span class="kw">docker</span> run --tmpfs /tmp:size=64m,mode=1777 alpine
+<span class="cmt"># /tmp в памяти, исчезнет при остановке. Полезно для секретов и кэшей.</span>
+</code></pre>
+
+    <h3>Синтаксис --mount (современный)</h3>
+<pre><code><span class="kw">docker</span> run \
+  --mount type=volume,source=pgdata,target=/var/lib/postgresql/data \
+  --mount type=bind,source=$(pwd)/conf,target=/etc/conf,readonly \
+  --mount type=tmpfs,target=/tmp,tmpfs-size=64m \
+  postgres:16
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Гочча с permissions</div>
+      Bind mount наследует UID/GID с хоста. Если контейнер запущен от <code>USER 1000</code>, а файлы на хосте принадлежат root — будет permission denied. Решения: <code>chown</code> на хосте, <code>--user $(id -u):$(id -g)</code> или init-скрипт в entrypoint.
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section class="note-section" id="network">
+    <h2><span class="num">// 09</span>Docker networking</h2>
+
+    <h3>Драйверы сетей</h3>
+    <table class="compare">
+      <tr><th>Драйвер</th><th>Когда использовать</th></tr>
+      <tr><td><code>bridge</code></td><td>Дефолт. Контейнеры на одном хосте общаются друг с другом</td></tr>
+      <tr><td><code>host</code></td><td>Контейнер использует сеть хоста напрямую (нет изоляции, нет NAT)</td></tr>
+      <tr><td><code>none</code></td><td>Без сети вообще — только loopback</td></tr>
+      <tr><td><code>overlay</code></td><td>Сеть между хостами в Swarm/Kubernetes</td></tr>
+      <tr><td><code>macvlan</code></td><td>Контейнер получает MAC и IP физической сети</td></tr>
+    </table>
+
+    <h3>Дефолтный bridge vs custom bridge</h3>
+    <ul>
+      <li><strong>Дефолтный <code>docker0</code></strong> — все контейнеры без указания <code>--network</code>. Резолвинг по имени НЕ работает, только по IP.</li>
+      <li><strong>Custom bridge</strong> — создаёшь сам, имена контейнеров автоматически резолвятся через встроенный DNS Docker'а. <strong>Всегда используй custom.</strong></li>
+    </ul>
+
+<pre><code><span class="kw">docker</span> network create app-net
+
+<span class="kw">docker</span> run -d --network app-net --name db postgres:16
+<span class="kw">docker</span> run -d --network app-net --name web \
+  -e DATABASE_URL=<span class="str">"postgres://postgres@db:5432/app"</span> \   <span class="cmt"># db резолвится в IP контейнера</span>
+  myapp
+
+<span class="kw">docker</span> network ls
+<span class="kw">docker</span> network inspect app-net
+<span class="kw">docker</span> network connect app-net &lt;container&gt;       <span class="cmt"># добавить контейнер</span>
+<span class="kw">docker</span> network disconnect app-net &lt;container&gt;
+</code></pre>
+
+    <h3>Публикация портов</h3>
+<pre><code>-p 8080:80           <span class="cmt"># все интерфейсы хоста</span>
+-p 127.0.0.1:8080:80 <span class="cmt"># только localhost (безопаснее!)</span>
+-P                   <span class="cmt"># опубликовать ВСЕ EXPOSE на случайные порты</span>
+</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Безопасность</div>
+      <code>-p 8080:80</code> биндит на <strong>0.0.0.0</strong> — порт открыт всему миру. На dev-сервере с публичным IP это часто означает БД, торчащую наружу. Используй <code>-p 127.0.0.1:8080:80</code> или фаервол.
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="note-section" id="compose">
+    <h2><span class="num">// 10</span>Docker Compose углублённо</h2>
+
+    <p>Compose описывает мульти-контейнерное приложение в одном YAML. Это «package manager» твоего dev-окружения и удобный способ декларативно поднять стек на одном хосте.</p>
+
+    <h3>Полный пример</h3>
+<pre><code><span class="cmt"># compose.yml (имя файла docker-compose.yml тоже работает)</span>
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: $<span class="str">{VERSION:-dev}</span>
+    image: myapp:$<span class="str">{VERSION:-dev}</span>
+    ports:
+      - <span class="str">"127.0.0.1:8080:8080"</span>
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/app
+      REDIS_URL: redis://cache:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [<span class="str">"CMD"</span>, <span class="str">"curl"</span>, <span class="str">"-f"</span>, <span class="str">"http://localhost:8080/health"</span>]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [<span class="str">"CMD-SHELL"</span>, <span class="str">"pg_isready -U app"</span>]
+      interval: 5s
+
+  cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+volumes:
+  pgdata:
+</code></pre>
+
+    <h3>Команды</h3>
+<pre><code><span class="kw">docker</span> compose up -d              <span class="cmt"># поднять в фоне</span>
+<span class="kw">docker</span> compose up --build         <span class="cmt"># пересобрать образы</span>
+<span class="kw">docker</span> compose down               <span class="cmt"># остановить и удалить</span>
+<span class="kw">docker</span> compose down -v            <span class="cmt"># + удалить volumes</span>
+<span class="kw">docker</span> compose ps
+<span class="kw">docker</span> compose logs -f web
+<span class="kw">docker</span> compose exec web bash
+<span class="kw">docker</span> compose restart web
+<span class="kw">docker</span> compose run --rm web pytest  <span class="cmt"># одноразовый запуск</span>
+<span class="kw">docker</span> compose pull                 <span class="cmt"># обновить образы из registry</span>
+</code></pre>
+
+    <h3>Профили — необязательные сервисы</h3>
+<pre><code>services:
+  pgadmin:
+    image: dpage/pgadmin4
+    profiles: [debug]
+
+<span class="cmt"># Запустится только если явно попросишь:</span>
+<span class="kw">docker</span> compose --profile debug up
+</code></pre>
+
+    <h3>Несколько compose-файлов</h3>
+<pre><code><span class="cmt"># compose.yml — базовое
+# compose.dev.yml — оверрайды для dev
+# compose.prod.yml — оверрайды для prod</span>
+<span class="kw">docker</span> compose -f compose.yml -f compose.dev.yml up
+</code></pre>
+
+    <h3>depends_on с healthcheck</h3>
+    <p>Просто <code>depends_on: [db]</code> означает «db стартовала первой», но НЕ «db готова принимать запросы». Postgres стартует за 2 секунды, а потом ещё 5 секунд готовится. Чтобы дождаться готовности — комбинируй с <code>healthcheck</code> + <code>condition: service_healthy</code>.</p>
+
+    <div class="callout tip">
+      <div class="callout-label">// Compose v2</div>
+      Новая команда — <code>docker compose</code> (без дефиса). Старый <code>docker-compose</code> (через дефис) — это python-версия v1, устарела. Файл называй <code>compose.yml</code> — это новый канон.
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="note-section" id="health">
+    <h2><span class="num">// 11</span>Healthchecks и restart policies</h2>
+
+    <h3>HEALTHCHECK</h3>
+<pre><code><span class="cmt"># В Dockerfile</span>
+<span class="kw">HEALTHCHECK</span> --interval=10s \
+            --timeout=3s \
+            --start-period=20s \
+            --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+</code></pre>
+    <ul>
+      <li><code>--interval</code> — как часто проверять.</li>
+      <li><code>--timeout</code> — сколько ждать ответа.</li>
+      <li><code>--start-period</code> — grace-period после старта, провалы не считаются.</li>
+      <li><code>--retries</code> — сколько провалов = unhealthy.</li>
+    </ul>
+
+    <p>Статус: <code>starting → healthy / unhealthy</code>. Виден в <code>docker ps</code> и используется <code>depends_on: condition: service_healthy</code>.</p>
+
+    <h3>Restart policies</h3>
+<pre><code>--restart no              <span class="cmt"># дефолт — не перезапускать</span>
+--restart on-failure      <span class="cmt"># только при ненулевом exit</span>
+--restart on-failure:3    <span class="cmt"># не более 3 раз</span>
+--restart always          <span class="cmt"># всегда</span>
+--restart unless-stopped  <span class="cmt"># всегда, но НЕ после явного docker stop — рекомендуется в проде</span>
+</code></pre>
+
+    <h3>Лимиты ресурсов</h3>
+<pre><code><span class="kw">docker</span> run \
+  --memory 512m \         <span class="cmt"># hard limit, OOMKill при превышении</span>
+  --memory-reservation 256m \  <span class="cmt"># soft limit</span>
+  --cpus 1.5 \            <span class="cmt"># 1.5 ядра</span>
+  --pids-limit 100 \      <span class="cmt"># max процессов</span>
+  myapp
+</code></pre>
+  </section>
+
+  <!-- 12 -->
+  <section class="note-section" id="secrets">
+    <h2><span class="num">// 12</span>Secrets и переменные окружения</h2>
+
+    <h3>Передача env</h3>
+<pre><code><span class="kw">docker</span> run -e DB_URL=<span class="str">"postgres://..."</span> myapp
+<span class="kw">docker</span> run --env-file .env myapp           <span class="cmt"># из файла</span>
+
+<span class="cmt"># В compose</span>
+services:
+  web:
+    environment:
+      DB_URL: postgres://app:$<span class="str">{DB_PASS}</span>@db:5432/app
+    env_file:
+      - .env
+</code></pre>
+
+    <h3>Что НЕЛЬЗЯ делать</h3>
+    <ul>
+      <li>❌ Класть секреты в Dockerfile через <code>ENV</code> — они в слоях образа навсегда.</li>
+      <li>❌ Передавать через <code>--build-arg</code> — остаются в <code>docker history</code>.</li>
+      <li>❌ Коммитить <code>.env</code> с продовскими паролями.</li>
+    </ul>
+
+    <h3>BuildKit secret — для секретов в сборке</h3>
+<pre><code><span class="cmt"># Dockerfile</span>
+<span class="kw">RUN</span> --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm install
+
+<span class="cmt"># Сборка</span>
+<span class="kw">DOCKER_BUILDKIT</span>=1 docker build \
+  --secret id=npmrc,src=$HOME/.npmrc \
+  -t myapp .
+</code></pre>
+
+    <h3>Docker secrets (Swarm) / Compose secrets</h3>
+<pre><code>services:
+  web:
+    image: myapp
+    secrets:
+      - db_password
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+<span class="cmt"># Внутри контейнера: /run/secrets/db_password</span>
+</code></pre>
+
+    <p>В Kubernetes секреты живут отдельно (объект Secret), монтируются как файлы или env. В Docker compose поддержка ограничена, но базовый use-case покрывает.</p>
+  </section>
+
+  <!-- 13 -->
+  <section class="note-section" id="registry">
+    <h2><span class="num">// 13</span>Registry — push, pull, теги</h2>
+
+    <h3>Имя образа: registry/namespace/repo:tag</h3>
+<pre><code>nginx:1.27                                <span class="cmt"># дефолт = docker.io/library/nginx:1.27</span>
+ghcr.io/kirill/myapp:v1.2                 <span class="cmt"># GitHub Container Registry</span>
+registry.gitlab.com/group/proj/web:latest <span class="cmt"># GitLab</span>
+123456.dkr.ecr.us-east-1.amazonaws.com/myapp:latest  <span class="cmt"># AWS ECR</span>
+harbor.example.com/team/app:sha-a1b2c3d   <span class="cmt"># Self-hosted Harbor</span>
+</code></pre>
+
+    <h3>Логин и push</h3>
+<pre><code><span class="kw">docker</span> login ghcr.io -u kirill -p $GITHUB_TOKEN
+<span class="kw">docker</span> tag myapp:latest ghcr.io/kirill/myapp:v1.2
+<span class="kw">docker</span> push ghcr.io/kirill/myapp:v1.2
+</code></pre>
+
+    <h3>Стратегии тегирования</h3>
+    <ul>
+      <li><strong>SemVer:</strong> <code>v1.2.3</code>, <code>v1.2</code>, <code>v1</code> — для библиотек/публичных образов.</li>
+      <li><strong>Git SHA:</strong> <code>sha-a1b2c3d</code> — уникально, всегда можно соотнести с коммитом.</li>
+      <li><strong><code>latest</code> в проде — антипаттерн.</strong> Невозможно понять что развёрнуто.</li>
+      <li><strong>Иммутабельность:</strong> один тег = один образ. Не пересобирай под старый тег.</li>
+    </ul>
+
+    <h3>Manifest и multi-arch</h3>
+<pre><code><span class="cmt"># Один тег указывает на разные образы для разных архитектур</span>
+<span class="kw">docker</span> manifest inspect nginx:1.27
+
+<span class="cmt"># Сборка multi-arch через buildx</span>
+<span class="kw">docker</span> buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/kirill/myapp:v1.2 \
+  --push .
+</code></pre>
+  </section>
+
+  <!-- 14 -->
+  <section class="note-section" id="scan">
+    <h2><span class="num">// 14</span>Сканирование уязвимостей</h2>
+
+    <p>Образ может содержать сотни CVE — от устаревшего OpenSSL до зависимостей приложения. Сканеры читают манифест образа и сравнивают с базами уязвимостей.</p>
+
+    <h3>Trivy — самый популярный</h3>
+<pre><code><span class="kw">brew</span> install trivy
+<span class="kw">apt</span> install trivy
+
+<span class="kw">trivy</span> image nginx:1.27                       <span class="cmt"># все уязвимости</span>
+<span class="kw">trivy</span> image --severity HIGH,CRITICAL myapp    <span class="cmt"># только серьёзные</span>
+<span class="kw">trivy</span> image --ignore-unfixed myapp            <span class="cmt"># без фиксов — игнорируем</span>
+<span class="kw">trivy</span> image --exit-code 1 --severity CRITICAL myapp  <span class="cmt"># упасть в CI</span>
+
+<span class="kw">trivy</span> fs .                                    <span class="cmt"># сканировать репозиторий (requirements.txt, package.json и т.д.)</span>
+<span class="kw">trivy</span> config Dockerfile                       <span class="cmt"># проверка Dockerfile на ошибки</span>
+</code></pre>
+
+    <h3>Альтернативы</h3>
+    <ul>
+      <li><strong>Grype</strong> — от Anchore, быстрый.</li>
+      <li><strong>docker scout</strong> — встроен в Docker Desktop (<code>docker scout cves myimg</code>).</li>
+      <li><strong>Snyk</strong> — коммерческий, хорош для SCA.</li>
+      <li>Скан в registry: GHCR / GitLab / Harbor умеют сканировать при push.</li>
+    </ul>
+
+    <h3>Как уменьшить площадь атаки</h3>
+    <ul>
+      <li>Минимальная база (distroless, alpine, slim).</li>
+      <li>Не запускать от root: <code>USER 1000</code>.</li>
+      <li>Регулярно пересобирать образы — даже если код не менялся, базовые образы получают патчи.</li>
+      <li>Закрепляй версии: <code>nginx:1.27.0</code> вместо <code>nginx:latest</code>.</li>
+      <li><code>--read-only</code> для root FS контейнера + <code>tmpfs</code> для нужных мест записи.</li>
+    </ul>
+  </section>
+
+  <!-- 15 -->
+  <section class="note-section" id="debug">
+    <h2><span class="num">// 15</span>Диагностика: OOMKilled, exit codes, logs</h2>
+
+    <h3>Exit codes</h3>
+    <table class="compare">
+      <tr><th>Код</th><th>Значение</th></tr>
+      <tr><td>0</td><td>Успех</td></tr>
+      <tr><td>1</td><td>Ошибка приложения</td></tr>
+      <tr><td>125</td><td>Ошибка самого docker (например, не нашёл образ)</td></tr>
+      <tr><td>126</td><td>CMD не может быть выполнен (нет прав, не исполняемый)</td></tr>
+      <tr><td>127</td><td>Команда не найдена</td></tr>
+      <tr><td>137</td><td><strong>SIGKILL</strong> — OOM-killer убил из-за памяти</td></tr>
+      <tr><td>139</td><td>SIGSEGV — segfault</td></tr>
+      <tr><td>143</td><td>SIGTERM — нормальный <code>docker stop</code></td></tr>
+    </table>
+
+<pre><code><span class="kw">docker</span> inspect &lt;name&gt; --format '{{.State.ExitCode}} {{.State.Error}}'
+<span class="kw">docker</span> inspect &lt;name&gt; --format '{{.State.OOMKilled}}'
+</code></pre>
+
+    <h3>OOMKilled — что делать</h3>
+    <ol>
+      <li><code>docker inspect</code> → <code>State.OOMKilled=true</code>?</li>
+      <li>Смотрим <code>--memory</code> лимит и реальное потребление: <code>docker stats &lt;name&gt;</code>.</li>
+      <li>Если приложение жрёт больше лимита — поднимай лимит или ищи утечку.</li>
+      <li>Для JVM/Node — настрой heap size с учётом лимита контейнера (<code>-Xmx</code>, <code>NODE_OPTIONS=--max-old-space-size</code>).</li>
+      <li><code>dmesg | grep -i killed</code> на хосте покажет действия OOM-killer.</li>
+    </ol>
+
+    <h3>Логи</h3>
+<pre><code><span class="kw">docker</span> logs -f --tail 200 &lt;name&gt;
+<span class="kw">docker</span> logs --since 10m --until 5m &lt;name&gt;
+<span class="kw">docker</span> logs --timestamps &lt;name&gt;
+
+<span class="cmt"># Где лежат на хосте (json-file driver):</span>
+<span class="kw">cat</span> /var/lib/docker/containers/&lt;id&gt;/&lt;id&gt;-json.log
+</code></pre>
+    <p>Совет: настрой <code>log-driver</code> и ротацию в <code>/etc/docker/daemon.json</code> — иначе один разговорчивый контейнер забивает диск:</p>
+<pre><code>{
+  <span class="str">"log-driver"</span>: <span class="str">"json-file"</span>,
+  <span class="str">"log-opts"</span>: {
+    <span class="str">"max-size"</span>: <span class="str">"100m"</span>,
+    <span class="str">"max-file"</span>: <span class="str">"3"</span>
+  }
+}
+</code></pre>
+
+    <h3>Полезные приёмы</h3>
+<pre><code><span class="kw">docker</span> stats --no-stream                  <span class="cmt"># снапшот ресурсов</span>
+<span class="kw">docker</span> events                              <span class="cmt"># поток событий демона (start/stop/die)</span>
+<span class="kw">docker</span> top &lt;name&gt;                          <span class="cmt"># процессы внутри</span>
+<span class="kw">docker</span> diff &lt;name&gt;                         <span class="cmt"># что изменилось в FS от образа</span>
+<span class="kw">docker</span> cp &lt;name&gt;:/path/to/file ./           <span class="cmt"># вытащить файл</span>
+<span class="kw">docker</span> exec -it &lt;name&gt; sh                  <span class="cmt"># залезть внутрь</span>
+<span class="kw">docker</span> run --rm --net container:&lt;name&gt; \
+  nicolaka/netshoot                          <span class="cmt"># debug-контейнер в сети другого</span>
+</code></pre>
+  </section>
+
+  <!-- 16 -->
+  <section class="note-section" id="buildkit">
+    <h2><span class="num">// 16</span>BuildKit и buildx</h2>
+
+    <p><strong>BuildKit</strong> — современный движок сборки Docker. Параллелит независимые шаги, поддерживает кэш-маунты, secret-маунты, multi-arch. В Docker Desktop включён по умолчанию.</p>
+
+    <h3>Кэш-маунты для зависимостей</h3>
+<pre><code><span class="cmt"># syntax=docker/dockerfile:1.7</span>
+<span class="kw">FROM</span> python:3.12-slim
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+<span class="kw">COPY</span> . .
+</code></pre>
+    <p>Кэш pip сохраняется между сборками — даже если кеш слоя инвалидирован.</p>
+
+    <h3>buildx — multi-arch сборка</h3>
+<pre><code><span class="kw">docker</span> buildx create --use --name multi
+<span class="kw">docker</span> buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/kirill/app:v1 \
+  --push .
+</code></pre>
+
+    <h3>Удалённый кеш в registry</h3>
+<pre><code><span class="kw">docker</span> buildx build \
+  --cache-from type=registry,ref=ghcr.io/kirill/app:buildcache \
+  --cache-to   type=registry,ref=ghcr.io/kirill/app:buildcache,mode=max \
+  -t ghcr.io/kirill/app:v1 \
+  --push .
+</code></pre>
+    <p>Используется в CI чтобы переиспользовать слои между запусками джобы (где локальный docker-кеш чистый).</p>
+  </section>
+
+  <!-- 17 -->
+  <section class="note-section" id="best">
+    <h2><span class="num">// 17</span>Best practices в продакшне</h2>
+
+    <h3>Dockerfile</h3>
+    <ul>
+      <li>Закрепляй версию базового образа: <code>nginx:1.27.0</code>, не <code>nginx</code>.</li>
+      <li>Сортируй инструкции от редко меняющихся к часто меняющимся.</li>
+      <li>Один <code>RUN apt-get update &amp;&amp; apt-get install &amp;&amp; rm -rf /var/lib/apt/lists/*</code>.</li>
+      <li><code>USER</code> — не root. Создай юзера в Dockerfile.</li>
+      <li>Multi-stage — даже для языков без компиляции (нужно собрать ассеты, например).</li>
+      <li><code>HEALTHCHECK</code> обязателен — иначе orchestrator не знает что приложение упало.</li>
+      <li><code>STOPSIGNAL</code> — если приложение не понимает SIGTERM, укажи SIGINT.</li>
+      <li><code>.dockerignore</code> исключает контекст: <code>.git</code>, <code>node_modules</code>, <code>.env</code>.</li>
+      <li>OCI labels: <code>org.opencontainers.image.source</code> — ссылка на репо.</li>
+    </ul>
+
+    <h3>Runtime</h3>
+    <ul>
+      <li>Всегда задавай лимиты: <code>--memory</code>, <code>--cpus</code>.</li>
+      <li><code>--read-only</code> + <code>tmpfs</code> для нужных директорий записи.</li>
+      <li><code>--cap-drop=ALL</code> и добавляй обратно только нужные capabilities.</li>
+      <li><code>--security-opt no-new-privileges</code>.</li>
+      <li>Не маунть <code>/var/run/docker.sock</code> внутрь контейнера без острой необходимости (это даёт root на хосте).</li>
+      <li>Используй пользователя без UID 0: <code>USER 1000</code>.</li>
+      <li><code>restart: unless-stopped</code> — не <code>always</code>.</li>
+    </ul>
+
+    <h3>CI/CD</h3>
+    <ul>
+      <li>Кэшируй слои через <code>buildx --cache-from/--cache-to</code>.</li>
+      <li>Тегируй git SHA + semver, никогда не пушь только <code>latest</code>.</li>
+      <li>Сканируй <code>trivy image --exit-code 1 --severity CRITICAL</code> в pipeline.</li>
+      <li>Подписывай образы (cosign).</li>
+    </ul>
+
+    <h3>12-factor</h3>
+    <ul>
+      <li>Конфигурация — через env, не файлами в образе.</li>
+      <li>Логи — в stdout/stderr, оркестратор сам разберётся.</li>
+      <li>Stateless — состояние в БД/Redis/Volume, не в локальной FS контейнера.</li>
+      <li>Один процесс на контейнер. Нет supervisor'а.</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-label">// Чеклист перед прод-релизом</div>
+      ✓ Multi-stage  ✓ Non-root user  ✓ Pinned versions  ✓ Healthcheck  ✓ Resource limits  ✓ .dockerignore  ✓ Trivy passes  ✓ Tagged with SHA  ✓ Logs to stdout
+    </div>
+  </section>
+
+  <!-- 18 -->
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 18</span>Шпаргалка команд</h2>
+
+    <h3>Жизненный цикл</h3>
+<pre><code><span class="kw">docker</span> run -d --name X -p 8080:80 IMG
+<span class="kw">docker</span> ps   /   ps -a   /   stop X   /   rm -f X
+<span class="kw">docker</span> logs -f --tail 100 X
+<span class="kw">docker</span> exec -it X bash
+<span class="kw">docker</span> inspect X
+</code></pre>
+
+    <h3>Образы</h3>
+<pre><code><span class="kw">docker</span> build -t myapp:v1 .
+<span class="kw">docker</span> build -f Dockerfile.prod --build-arg V=1 .
+<span class="kw">docker</span> images
+<span class="kw">docker</span> tag src dst
+<span class="kw">docker</span> push registry/img:tag
+<span class="kw">docker</span> pull img:tag
+<span class="kw">docker</span> history img
+<span class="kw">docker</span> save img &gt; img.tar       /   load &lt; img.tar
+</code></pre>
+
+    <h3>Volumes / network</h3>
+<pre><code><span class="kw">docker</span> volume create / ls / inspect / rm
+<span class="kw">docker</span> network create app-net
+<span class="kw">docker</span> network connect app-net X
+</code></pre>
+
+    <h3>Compose</h3>
+<pre><code><span class="kw">docker</span> compose up -d --build
+<span class="kw">docker</span> compose down -v
+<span class="kw">docker</span> compose logs -f web
+<span class="kw">docker</span> compose exec web sh
+<span class="kw">docker</span> compose run --rm web pytest
+</code></pre>
+
+    <h3>Диагностика</h3>
+<pre><code><span class="kw">docker</span> stats
+<span class="kw">docker</span> events
+<span class="kw">docker</span> top X
+<span class="kw">docker</span> diff X
+<span class="kw">docker</span> cp X:/path ./
+<span class="kw">docker</span> inspect --format '{{.State.OOMKilled}}' X
+</code></pre>
+
+    <h3>Очистка</h3>
+<pre><code><span class="kw">docker</span> system df
+<span class="kw">docker</span> system prune                <span class="cmt"># неиспольз. контейнеры/сети/висячие образы</span>
+<span class="kw">docker</span> system prune -a --volumes    <span class="cmt"># + образы и volumes (ОСТОРОЖНО)</span>
+</code></pre>
+
+    <h3>BuildKit</h3>
+<pre><code><span class="kw">DOCKER_BUILDKIT</span>=1 docker build ...
+<span class="kw">docker</span> buildx build --platform linux/amd64,linux/arm64 --push -t img .
+</code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#notes">← Вернуться к конспектам</a>
+
+  <footer>
+    <div>// kirill@devops:~/notes/docker$ <a href="../index.html">cd ..</a></div>
+    <div>Конспект v1.0 · 18 секций</div>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспект · Git — Контроль версий</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/notes.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">// kirill@devops:<span>~/notes/git$</span></div>
+    <div class="topnav-links">
+      <a href="../index.html">Главная</a>
+      <a href="../index.html#plan">План</a>
+      <a href="../index.html#notes" class="active">Конспекты</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="note-hero">
+    <div class="breadcrumb">
+      <a href="../index.html">DevOps Roadmap</a>
+      <span class="breadcrumb-sep">/</span>
+      <a href="../index.html#notes">Конспекты</a>
+      <span class="breadcrumb-sep">/</span>
+      Git
+    </div>
+    <h1>Git — Контроль <span>версий</span></h1>
+    <div class="note-hero-meta">
+      <span class="tag-accent">МОДУЛЬ 02</span>
+      <span>Недели 3–4 · 14 дней</span>
+      <span>Конспект v1.0</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">// Содержание</div>
+    <ol>
+      <li><a href="#intro">Что такое Git и зачем он нужен</a></li>
+      <li><a href="#install">Установка и первичная настройка</a></li>
+      <li><a href="#basics">Базовый цикл: init, add, commit</a></li>
+      <li><a href="#states">Три состояния файлов</a></li>
+      <li><a href="#history">История: log, diff, show, blame</a></li>
+      <li><a href="#branches">Ветки: branch, checkout, switch</a></li>
+      <li><a href="#merge">Слияние веток и стратегии merge</a></li>
+      <li><a href="#conflicts">Конфликты слияния</a></li>
+      <li><a href="#gitignore">.gitignore и .gitattributes</a></li>
+      <li><a href="#remote">Удалённые репозитории: push, pull, fetch</a></li>
+      <li><a href="#github">GitHub: SSH-ключи и workflow</a></li>
+      <li><a href="#rebase">Rebase vs merge</a></li>
+      <li><a href="#cherrypick">Cherry-pick, revert, reset</a></li>
+      <li><a href="#stash">Stash и tags</a></li>
+      <li><a href="#reflog">Reflog и восстановление</a></li>
+      <li><a href="#pr">Pull Request workflow</a></li>
+      <li><a href="#cheatsheet">Шпаргалка команд</a></li>
+    </ol>
+  </div>
+
+  <!-- 01 -->
+  <section class="note-section" id="intro">
+    <h2><span class="num">// 01</span>Что такое Git и зачем он нужен</h2>
+    <p><strong>Git</strong> — это распределённая система контроля версий (DVCS), созданная Линусом Торвальдсом в 2005 году для разработки ядра Linux. Git хранит снимки (snapshots) состояния файлов проекта в специальном каталоге <code>.git</code>, и позволяет в любой момент откатиться к любой версии, переключиться между параллельными линиями разработки и слить изменения нескольких авторов.</p>
+
+    <h3>Почему DevOps-инженеру это критично</h3>
+    <ul>
+      <li><strong>Infrastructure as Code</strong> — Ansible playbooks, Terraform манифесты, Helm чарты живут в Git. Каждое изменение инфраструктуры — это коммит.</li>
+      <li><strong>CI/CD</strong> — пайплайны срабатывают на git-события (push, tag, PR).</li>
+      <li><strong>Аудит и rollback</strong> — кто что изменил и когда. Сломал прод — откатил.</li>
+      <li><strong>Совместная работа</strong> — десятки человек редактируют один репозиторий без конфликтов.</li>
+    </ul>
+
+    <h3>Ключевые понятия одной строкой</h3>
+    <ul>
+      <li><strong>Репозиторий (repo)</strong> — папка с проектом + история в <code>.git/</code>.</li>
+      <li><strong>Коммит</strong> — снимок состояния всех файлов + автор + сообщение + ссылка на родителя.</li>
+      <li><strong>Ветка (branch)</strong> — подвижный указатель на коммит. <code>main</code>, <code>feature/x</code>.</li>
+      <li><strong>HEAD</strong> — указатель «где я сейчас». Обычно совпадает с веткой.</li>
+      <li><strong>Remote</strong> — внешняя копия репозитория (на GitHub, GitLab, Gitea).</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-label">// Важно понимать</div>
+      Git хранит <em>снимки</em>, а не <em>изменения</em>. Каждый коммит — это полный снимок состояния. Дельты вычисляются на лету при <code>diff</code>. Это принципиальное отличие от SVN/CVS и причина, по которой ветки в Git дёшевы.
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section class="note-section" id="install">
+    <h2><span class="num">// 02</span>Установка и первичная настройка</h2>
+
+    <h3>Установка</h3>
+<pre><code><span class="cmt"># Fedora / RHEL / РЕД ОС</span>
+sudo dnf install git
+
+<span class="cmt"># Debian / Ubuntu</span>
+sudo apt install git
+
+<span class="cmt"># macOS (через Xcode Command Line Tools или brew)</span>
+brew install git
+
+<span class="cmt"># Проверить версию</span>
+git --version</code></pre>
+
+    <h3>Глобальная настройка (делается один раз)</h3>
+<pre><code><span class="cmt"># Имя и email — попадут в каждый коммит</span>
+git config --global user.name <span class="str">"Kirill Neustroev"</span>
+git config --global user.email <span class="str">"kirill@example.com"</span>
+
+<span class="cmt"># Дефолтная ветка main вместо master</span>
+git config --global init.defaultBranch main
+
+<span class="cmt"># Редактор по умолчанию (для commit -v, rebase -i)</span>
+git config --global core.editor <span class="str">"vim"</span>   <span class="cmt"># или nano, code --wait</span>
+
+<span class="cmt"># Цветной вывод</span>
+git config --global color.ui auto
+
+<span class="cmt"># Стратегия pull (по умолчанию merge; rebase реже, ff-only безопаснее)</span>
+git config --global pull.rebase false
+
+<span class="cmt"># Алиасы</span>
+git config --global alias.s status
+git config --global alias.co checkout
+git config --global alias.lg <span class="str">"log --oneline --graph --decorate --all"</span></code></pre>
+
+    <h3>Где лежит конфиг</h3>
+    <table class="compare">
+      <thead><tr><th>Уровень</th><th>Файл</th><th>Флаг</th></tr></thead>
+      <tbody>
+        <tr><td>Системный</td><td>/etc/gitconfig</td><td>--system</td></tr>
+        <tr><td>Пользователя</td><td>~/.gitconfig или ~/.config/git/config</td><td>--global</td></tr>
+        <tr><td>Репозитория</td><td>.git/config</td><td>--local (по умолчанию)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Проверить текущие настройки: <code>git config --list --show-origin</code>.</p>
+  </section>
+
+  <!-- 03 -->
+  <section class="note-section" id="basics">
+    <h2><span class="num">// 03</span>Базовый цикл: init, add, commit</h2>
+
+    <h3>Создать репозиторий</h3>
+<pre><code><span class="cmt"># Новый проект с нуля</span>
+mkdir my-project &amp;&amp; cd my-project
+git init                       <span class="cmt"># создаёт .git/</span>
+
+<span class="cmt"># Или клонировать существующий</span>
+git clone git@github.com:user/repo.git
+git clone https://github.com/user/repo.git
+git clone --depth 1 &lt;url&gt;     <span class="cmt"># shallow clone — только последний коммит</span></code></pre>
+
+    <h3>Базовый цикл работы</h3>
+<pre><code><span class="cmt"># 1. Посмотреть что изменилось</span>
+git status                     <span class="cmt"># краткий обзор</span>
+git status -s                  <span class="cmt"># совсем коротко: M, A, ??</span>
+
+<span class="cmt"># 2. Добавить файлы в индекс (staging area)</span>
+git add file.txt               <span class="cmt"># один файл</span>
+git add src/                   <span class="cmt"># всю папку</span>
+git add .                      <span class="cmt"># всё в текущей директории</span>
+git add -A                     <span class="cmt"># всё, включая удалённые файлы</span>
+git add -p                     <span class="cmt"># интерактивно по хункам — золотой стандарт</span>
+
+<span class="cmt"># 3. Закоммитить</span>
+git commit -m <span class="str">"feat: add user login"</span>
+git commit                     <span class="cmt"># откроет редактор для длинного сообщения</span>
+git commit -am <span class="str">"fix"</span>           <span class="cmt"># add + commit для уже отслеживаемых файлов</span></code></pre>
+
+    <h3>Хорошее сообщение коммита</h3>
+    <p>Стандарт <strong>Conventional Commits</strong>:</p>
+<pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;short summary&gt;
+
+&lt;detailed body, why not what&gt;
+
+&lt;footer: BREAKING CHANGE, Closes #123&gt;</code></pre>
+    <p><strong>Типы:</strong> <code>feat</code>, <code>fix</code>, <code>docs</code>, <code>style</code>, <code>refactor</code>, <code>test</code>, <code>chore</code>, <code>ci</code>, <code>build</code>, <code>perf</code>.</p>
+    <p>Пример:</p>
+<pre><code>feat(auth): add password reset via email
+
+Send a one-time token to user's email; token is valid for 15 min.
+Closes #142</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Правило 50/72</div>
+      Первая строка — до 50 символов, тело — до 72 символов в строке. Так нормально читается в <code>git log</code>, GitHub diff, email-уведомлениях.
+    </div>
+
+    <h3>Исправить последний коммит</h3>
+<pre><code><span class="cmt"># Изменить сообщение последнего коммита</span>
+git commit --amend -m <span class="str">"new message"</span>
+
+<span class="cmt"># Добавить забытый файл в последний коммит</span>
+git add forgotten.txt
+git commit --amend --no-edit
+
+<span class="cmt"># ВАЖНО: amend меняет хэш коммита. Не делай amend после push в общую ветку!</span></code></pre>
+  </section>
+
+  <!-- 04 -->
+  <section class="note-section" id="states">
+    <h2><span class="num">// 04</span>Три состояния файлов</h2>
+    <p>Это самая важная ментальная модель Git. Файл всегда находится в одном из трёх «миров»:</p>
+
+    <table class="compare">
+      <thead><tr><th>Состояние</th><th>Где живёт</th><th>Что значит</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Working tree</strong></td><td>На диске</td><td>То, что ты видишь и редактируешь</td></tr>
+        <tr><td><strong>Index / Staging</strong></td><td>.git/index</td><td>Подготовлено к коммиту (<code>git add</code>)</td></tr>
+        <tr><td><strong>Repository</strong></td><td>.git/objects</td><td>Закоммичено навсегда (<code>git commit</code>)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Команды переводят файл из одного состояния в другое:</p>
+
+<pre><code>working tree  ──[git add]──&gt;  index  ──[git commit]──&gt;  repository
+     ^                          |                            |
+     └──[git checkout/restore]──┘                            |
+     └──────[git reset --hard / git restore --source]────────┘</code></pre>
+
+    <h3>Просмотр изменений по состояниям</h3>
+<pre><code>git diff              <span class="cmt"># working tree vs index — что НЕ добавлено</span>
+git diff --staged     <span class="cmt"># index vs HEAD — что добавлено, но не закоммичено</span>
+git diff HEAD         <span class="cmt"># working tree + index vs HEAD — всё несохранённое</span>
+git diff main..feat   <span class="cmt"># все изменения между ветками</span></code></pre>
+
+    <h3>Отмена изменений</h3>
+<pre><code><span class="cmt"># Убрать файл из staging (не трогая working tree)</span>
+git restore --staged file.txt
+git reset HEAD file.txt          <span class="cmt"># старый синтаксис, делает то же</span>
+
+<span class="cmt"># Откатить изменения в working tree до состояния HEAD</span>
+git restore file.txt
+git checkout -- file.txt         <span class="cmt"># старый синтаксис</span>
+
+<span class="cmt"># Откатить всё: и индекс, и working tree</span>
+git reset --hard HEAD            <span class="cmt"># ОСТОРОЖНО — несохранённые изменения потеряны</span></code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Подводный камень</div>
+      <code>git reset --hard</code> и <code>git restore</code> без <code>--staged</code> <strong>удаляют</strong> изменения в working tree без подтверждения и без возможности восстановить (если файл не был закоммичен). Перед хардкорными операциями делай <code>git stash</code>.
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section class="note-section" id="history">
+    <h2><span class="num">// 05</span>История: log, diff, show, blame</h2>
+
+    <h3>git log — навигация по истории</h3>
+<pre><code>git log                         <span class="cmt"># полная история текущей ветки</span>
+git log --oneline               <span class="cmt"># одна строка на коммит</span>
+git log --graph --all           <span class="cmt"># граф всех веток</span>
+git log --oneline --graph --decorate --all     <span class="cmt"># идеально (алиас lg)</span>
+
+git log -n 5                    <span class="cmt"># последние 5 коммитов</span>
+git log --author=<span class="str">"Kirill"</span>      <span class="cmt"># по автору</span>
+git log --since=<span class="str">"2 weeks ago"</span>
+git log --grep=<span class="str">"login"</span>         <span class="cmt"># поиск по сообщению</span>
+git log -p                      <span class="cmt"># с diff каждого коммита</span>
+git log --stat                  <span class="cmt"># с статистикой изменений</span>
+git log -- path/to/file         <span class="cmt"># история конкретного файла</span>
+git log -S <span class="str">"foo()"</span>            <span class="cmt"># коммиты, добавляющие/удаляющие "foo()"</span></code></pre>
+
+    <h3>git show — детали одного коммита</h3>
+<pre><code>git show HEAD                   <span class="cmt"># последний коммит + diff</span>
+git show a3f1b2                 <span class="cmt"># по короткому хэшу</span>
+git show HEAD~2                 <span class="cmt"># коммит 2 шага назад от HEAD</span>
+git show HEAD:path/file.txt     <span class="cmt"># содержимое файла на момент HEAD</span></code></pre>
+
+    <h3>git blame — кто и когда написал строку</h3>
+<pre><code>git blame README.md             <span class="cmt"># построчно: коммит + автор + строка</span>
+git blame -L 10,20 README.md    <span class="cmt"># только строки 10–20</span>
+git blame --since=<span class="str">"1 month"</span> file</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// tig вместо git log</div>
+      <code>tig</code> — TUI-обёртка над git. <code>tig</code> покажет интерактивный лог, нажми Enter на коммите — увидишь diff. <code>tig blame file</code> — интерактивный blame. Установка: <code>dnf install tig</code>.
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="note-section" id="branches">
+    <h2><span class="num">// 06</span>Ветки: branch, checkout, switch</h2>
+
+    <p><strong>Ветка</strong> — это просто файл в <code>.git/refs/heads/</code> с хэшем коммита внутри. Создание ветки — операция O(1), занимает 41 байт. Ветви в Git не «дорогие», как в SVN — пользуйся ими щедро.</p>
+
+    <h3>Жизненный цикл ветки</h3>
+<pre><code><span class="cmt"># Посмотреть ветки</span>
+git branch                      <span class="cmt"># локальные</span>
+git branch -a                   <span class="cmt"># + удалённые</span>
+git branch -v                   <span class="cmt"># + последний коммит</span>
+
+<span class="cmt"># Создать ветку</span>
+git branch feature/login        <span class="cmt"># создать, но остаться на текущей</span>
+git switch -c feature/login     <span class="cmt"># создать И переключиться (modern)</span>
+git checkout -b feature/login   <span class="cmt"># то же, старый синтаксис</span>
+
+<span class="cmt"># Переключаться</span>
+git switch main                 <span class="cmt"># переключиться на main</span>
+git switch -                    <span class="cmt"># вернуться на предыдущую ветку</span>
+git checkout main               <span class="cmt"># старый синтаксис</span>
+
+<span class="cmt"># Переименовать</span>
+git branch -m old-name new-name
+
+<span class="cmt"># Удалить</span>
+git branch -d feature/login     <span class="cmt"># безопасно (только если слита)</span>
+git branch -D feature/login     <span class="cmt"># принудительно (даже если несли́та)</span></code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// switch vs checkout</div>
+      <code>switch</code> и <code>restore</code> появились в Git 2.23 (2019) специально, чтобы разделить ответственности <code>checkout</code>. <code>checkout</code> делал слишком много — и менял ветки, и восстанавливал файлы. Современный код использует <code>switch</code> для веток и <code>restore</code> для файлов.
+    </div>
+
+    <h3>Соглашения по именам веток</h3>
+    <ul>
+      <li><code>main</code> или <code>master</code> — основная стабильная ветка</li>
+      <li><code>develop</code> — интеграционная ветка (GitFlow)</li>
+      <li><code>feature/&lt;name&gt;</code> — новая фича</li>
+      <li><code>fix/&lt;issue-id&gt;</code> — багфикс</li>
+      <li><code>hotfix/&lt;name&gt;</code> — срочное исправление прода</li>
+      <li><code>release/v1.2</code> — подготовка релиза</li>
+    </ul>
+  </section>
+
+  <!-- 07 -->
+  <section class="note-section" id="merge">
+    <h2><span class="num">// 07</span>Слияние веток и стратегии merge</h2>
+
+    <h3>Базовое слияние</h3>
+<pre><code><span class="cmt"># Я хочу влить feature/login в main</span>
+git switch main
+git pull                        <span class="cmt"># свежий main</span>
+git merge feature/login         <span class="cmt"># слить</span>
+git push                        <span class="cmt"># отправить</span></code></pre>
+
+    <h3>Три типа merge</h3>
+
+    <h4>1. Fast-forward (FF)</h4>
+    <p>Если на <code>main</code> нет новых коммитов с момента ответвления — Git просто двигает указатель <code>main</code> вперёд. Никакого merge-коммита.</p>
+<pre><code>До:    A---B (main, feature)
+После: A---B---C---D (main, feature)</code></pre>
+
+    <h4>2. 3-way merge</h4>
+    <p>Если в обеих ветках есть свои коммиты — Git ищет общего предка и создаёт <em>merge-коммит</em> с двумя родителями.</p>
+<pre><code>До:    A---B---C (main)
+            \
+             D---E (feature)
+
+После: A---B---C---M (main)
+            \     /
+             D---E (feature)</code></pre>
+
+    <h4>3. Squash merge</h4>
+    <p>Все коммиты ветки склеиваются в один новый коммит на <code>main</code>. История ветки теряется, зато <code>main</code> остаётся чистым.</p>
+<pre><code>git merge --squash feature/login
+git commit -m <span class="str">"feat: add login (squashed)"</span></code></pre>
+
+    <h3>Флаги управления стратегией</h3>
+<pre><code>git merge --ff-only feature      <span class="cmt"># слить только если FF возможен (отказать иначе)</span>
+git merge --no-ff feature        <span class="cmt"># всегда создавать merge-коммит, даже если FF возможен</span>
+git merge --squash feature       <span class="cmt"># склеить в один коммит</span>
+git merge --abort                <span class="cmt"># откатить начатый merge</span></code></pre>
+
+    <table class="compare">
+      <thead><tr><th>Стратегия</th><th>Когда применять</th><th>Минусы</th></tr></thead>
+      <tbody>
+        <tr><td>FF</td><td>Мелкие правки, чистая линия</td><td>Теряет факт существования ветки</td></tr>
+        <tr><td>--no-ff</td><td>В command teams — видно границы фич</td><td>Граф становится «лохматым»</td></tr>
+        <tr><td>--squash</td><td>Грязная история ветки, нужен один логичный коммит</td><td>Теряется детальная история</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 08 -->
+  <section class="note-section" id="conflicts">
+    <h2><span class="num">// 08</span>Конфликты слияния</h2>
+
+    <p>Конфликт возникает, когда <strong>один и тот же участок файла</strong> изменён в обеих сливаемых ветках. Git не знает, какую версию выбрать, и просит человека решить.</p>
+
+    <h3>Как выглядит конфликт</h3>
+<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+String greeting = "Hello, World!";
+=======
+String greeting = "Привет, мир!";
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/i18n</code></pre>
+
+    <ul>
+      <li><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> — версия текущей ветки</li>
+      <li><code>=======</code> — разделитель</li>
+      <li><code>&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/i18n</code> — версия вливаемой ветки</li>
+    </ul>
+
+    <h3>Алгоритм решения конфликта</h3>
+<pre><code><span class="cmt"># 1. Запустить merge, получить ошибку</span>
+git merge feature/i18n
+<span class="cmt"># CONFLICT (content): Merge conflict in main.java</span>
+
+<span class="cmt"># 2. Посмотреть, какие файлы в конфликте</span>
+git status                       <span class="cmt"># они помечены как "both modified"</span>
+
+<span class="cmt"># 3. Открыть каждый файл и руками решить — оставить нужный код</span>
+<span class="cmt">#    Убрать все маркеры &lt;&lt;&lt;, ===, &gt;&gt;&gt;</span>
+vim main.java
+
+<span class="cmt"># 4. Добавить разрешённый файл в индекс</span>
+git add main.java
+
+<span class="cmt"># 5. Завершить merge</span>
+git commit                       <span class="cmt"># откроется редактор с готовым сообщением</span>
+
+<span class="cmt"># Если всё пошло не так — отменить</span>
+git merge --abort</code></pre>
+
+    <h3>Полезные инструменты</h3>
+<pre><code>git mergetool                    <span class="cmt"># открыть графический разрешатель (meld, vimdiff, kdiff3)</span>
+git config --global merge.tool meld
+git checkout --ours file.txt     <span class="cmt"># принять ВЕРСИЮ ТЕКУЩЕЙ ветки целиком</span>
+git checkout --theirs file.txt   <span class="cmt"># принять ВЕРСИЮ ВЛИВАЕМОЙ ветки целиком</span>
+git diff --name-only --diff-filter=U   <span class="cmt"># список файлов в конфликте</span></code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Совет</div>
+      Чтобы видеть в конфликте ещё и <em>общего предка</em> (3-way diff): <code>git config --global merge.conflictstyle diff3</code>. Это критично помогает понять, кто что менял, и часто конфликт решается тривиально.
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section class="note-section" id="gitignore">
+    <h2><span class="num">// 09</span>.gitignore и .gitattributes</h2>
+
+    <h3>.gitignore</h3>
+    <p>Список паттернов файлов, которые Git должен игнорировать (не отслеживать). Лежит в корне репо или в любой подпапке.</p>
+
+<pre><code><span class="cmt"># Конкретный файл</span>
+secret.env
+
+<span class="cmt"># Все файлы с расширением</span>
+*.log
+*.pyc
+
+<span class="cmt"># Папка целиком</span>
+node_modules/
+__pycache__/
+.venv/
+
+<span class="cmt"># Все .log на любой глубине</span>
+**/*.log
+
+<span class="cmt"># Игнорировать всё в build/, кроме .keep</span>
+build/*
+!build/.keep
+
+<span class="cmt"># Игнорировать файл, отрицание</span>
+*.txt
+!important.txt</code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Гача</div>
+      <code>.gitignore</code> работает только для <strong>неотслеживаемых</strong> файлов. Если файл уже был закоммичен — добавление его в gitignore не поможет. Нужно: <code>git rm --cached file</code> (удалить из индекса, но оставить на диске), потом коммит.
+    </div>
+
+    <h3>Готовые шаблоны</h3>
+    <p>На <a href="https://github.com/github/gitignore" style="color:var(--accent)">github.com/github/gitignore</a> — шаблоны для всех языков (Python, Node, Go, Java) и IDE (JetBrains, VSCode). Просто скопируй подходящий.</p>
+
+    <h3>.gitattributes</h3>
+    <p>Управляет тем, как Git обрабатывает определённые файлы: line endings, diff, merge, экспорт.</p>
+
+<pre><code><span class="cmt"># Все текстовые — LF на любых платформах</span>
+* text=auto eol=lf
+
+<span class="cmt"># Бинарные — не пытаться делать diff</span>
+*.png binary
+*.pdf binary
+
+<span class="cmt"># Исключить из git archive</span>
+.gitignore export-ignore
+tests/ export-ignore
+
+<span class="cmt"># LFS для больших файлов</span>
+*.psd filter=lfs diff=lfs merge=lfs -text</code></pre>
+  </section>
+
+  <!-- 10 -->
+  <section class="note-section" id="remote">
+    <h2><span class="num">// 10</span>Удалённые репозитории: push, pull, fetch</h2>
+
+    <h3>Управление remotes</h3>
+<pre><code>git remote -v                              <span class="cmt"># посмотреть remote'ы (обычно origin)</span>
+git remote add origin git@github.com:user/repo.git
+git remote add upstream git@github.com:original/repo.git   <span class="cmt"># для форков</span>
+git remote rename origin gh
+git remote remove origin
+git remote set-url origin git@gitlab.com:user/repo.git     <span class="cmt"># сменить URL</span></code></pre>
+
+    <h3>fetch vs pull</h3>
+    <table class="compare">
+      <thead><tr><th>Команда</th><th>Что делает</th><th>Меняет ли working tree</th></tr></thead>
+      <tbody>
+        <tr><td><code>git fetch</code></td><td>Скачивает изменения с remote в <code>origin/main</code></td><td>Нет</td></tr>
+        <tr><td><code>git pull</code></td><td><code>fetch</code> + <code>merge origin/main</code> в текущую ветку</td><td>Да</td></tr>
+        <tr><td><code>git pull --rebase</code></td><td><code>fetch</code> + <code>rebase</code> поверх <code>origin/main</code></td><td>Да</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>git fetch                       <span class="cmt"># просто скачать новости, не сливать</span>
+git fetch --all                 <span class="cmt"># со всех remote'ов</span>
+git fetch --prune               <span class="cmt"># удалить локальные ссылки на удалённые ветки</span>
+
+git pull                        <span class="cmt"># синхронизировать текущую ветку</span>
+git pull origin main            <span class="cmt"># явно с какого remote/ветки</span>
+git pull --rebase               <span class="cmt"># через rebase вместо merge — чище история</span></code></pre>
+
+    <h3>push</h3>
+<pre><code>git push                                       <span class="cmt"># отправить текущую ветку</span>
+git push origin main                           <span class="cmt"># явно</span>
+git push -u origin feature/login               <span class="cmt"># первый push новой ветки (--set-upstream)</span>
+git push --tags                                <span class="cmt"># отправить и теги</span>
+git push origin --delete feature/old           <span class="cmt"># удалить ветку на remote</span>
+git push --force-with-lease                    <span class="cmt"># БЕЗОПАСНЫЙ force push (откажет, если кто-то ещё пушил)</span>
+git push --force                               <span class="cmt"># опасно! Перезаписывает чужие коммиты</span></code></pre>
+
+    <div class="callout">
+      <div class="callout-label">// Никогда</div>
+      Не делай <code>git push --force</code> в shared ветки (<code>main</code>, <code>develop</code>). Используй <code>--force-with-lease</code> для своих feature-веток после <code>rebase</code>. <code>--force-with-lease</code> откажется пушить, если remote изменился — это защищает чужие коммиты.
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="note-section" id="github">
+    <h2><span class="num">// 11</span>GitHub: SSH-ключи и workflow</h2>
+
+    <h3>Генерация SSH-ключа</h3>
+<pre><code><span class="cmt"># Современный ed25519 (быстрее и безопаснее RSA)</span>
+ssh-keygen -t ed25519 -C <span class="str">"kirill@example.com"</span>
+<span class="cmt"># Enter, Enter (без пароля) или с паролем</span>
+
+<span class="cmt"># Файлы:</span>
+<span class="cmt">#   ~/.ssh/id_ed25519       — приватный (НИКОМУ не показывать!)</span>
+<span class="cmt">#   ~/.ssh/id_ed25519.pub   — публичный (его в GitHub)</span>
+
+<span class="cmt"># Скопировать публичный ключ</span>
+cat ~/.ssh/id_ed25519.pub
+<span class="cmt"># или (Linux): xclip -sel clip &lt; ~/.ssh/id_ed25519.pub</span>
+<span class="cmt"># или (Mac):   pbcopy &lt; ~/.ssh/id_ed25519.pub</span></code></pre>
+
+    <p><strong>Добавить ключ в GitHub:</strong> Settings → SSH and GPG keys → New SSH key → вставить содержимое <code>.pub</code>.</p>
+
+<pre><code><span class="cmt"># Проверить, что SSH работает</span>
+ssh -T git@github.com
+<span class="cmt"># &gt; Hi username! You've successfully authenticated...</span></code></pre>
+
+    <h3>~/.ssh/config — несколько ключей</h3>
+    <p>Если у тебя несколько аккаунтов (work, personal):</p>
+<pre><code>Host github-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_personal
+
+Host github-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_work</code></pre>
+    <p>Тогда: <code>git clone git@github-work:company/repo.git</code></p>
+
+    <h3>Типичный workflow (GitHub Flow)</h3>
+    <ol>
+      <li>Создать ветку от <code>main</code>: <code>git switch -c feature/login</code></li>
+      <li>Коммиты в ветку</li>
+      <li>Запушить: <code>git push -u origin feature/login</code></li>
+      <li>Открыть Pull Request в веб-интерфейсе</li>
+      <li>Code review, обсуждение, правки</li>
+      <li>Squash-merge или merge в <code>main</code></li>
+      <li>Локально удалить ветку: <code>git switch main &amp;&amp; git pull &amp;&amp; git branch -d feature/login</code></li>
+    </ol>
+  </section>
+
+  <!-- 12 -->
+  <section class="note-section" id="rebase">
+    <h2><span class="num">// 12</span>Rebase vs merge</h2>
+
+    <p><strong>Rebase</strong> переписывает историю ветки так, будто она ответвилась от свежего состояния целевой ветки. Это даёт линейную историю без merge-коммитов.</p>
+
+    <h3>Графически</h3>
+<pre><code>До rebase:
+A---B---C (main)
+    \
+     D---E (feature)
+
+После git rebase main (находясь на feature):
+A---B---C (main)
+        \
+         D'---E' (feature)
+<span class="cmt"># D' и E' — НОВЫЕ коммиты с новыми хэшами!</span></code></pre>
+
+    <h3>Команды</h3>
+<pre><code><span class="cmt"># Обычный rebase: переехать на свежий main</span>
+git switch feature/login
+git fetch origin
+git rebase origin/main
+
+<span class="cmt"># Конфликты — как при merge</span>
+<span class="cmt"># Разрешить, git add, потом:</span>
+git rebase --continue
+<span class="cmt"># Или отказаться</span>
+git rebase --abort
+
+<span class="cmt"># Interactive rebase — переписать историю ветки</span>
+git rebase -i HEAD~5             <span class="cmt"># последние 5 коммитов</span>
+git rebase -i origin/main        <span class="cmt"># все коммиты от точки ветвления</span></code></pre>
+
+    <h3>Что можно делать в interactive rebase</h3>
+<pre><code>pick   a3f1b2 feat: add login
+squash b4c2d3 fix typo            <span class="cmt"># склеить с предыдущим</span>
+reword c5d3e4 refactor structure  <span class="cmt"># поменять сообщение</span>
+edit   d6e4f5 add tests           <span class="cmt"># остановиться и дать редактировать</span>
+drop   e7f5g6 wip                 <span class="cmt"># удалить коммит</span>
+<span class="cmt"># Можно менять порядок строк — Git применит в новом порядке</span></code></pre>
+
+    <h3>Когда что выбирать</h3>
+    <table class="compare">
+      <thead><tr><th>Сценарий</th><th>Лучше</th><th>Почему</th></tr></thead>
+      <tbody>
+        <tr><td>Влить feature в main</td><td>merge --no-ff</td><td>Видно, что была ветка</td></tr>
+        <tr><td>Обновить feature-ветку свежим main</td><td>rebase</td><td>Линейная история без бесконечных merge'ев</td></tr>
+        <tr><td>Подчистить локальные коммиты перед PR</td><td>rebase -i</td><td>Сквошнуть «fix typo» в нормальный коммит</td></tr>
+        <tr><td>Уже отправлено в shared ветку</td><td>merge</td><td>Rebase ломает чужую историю</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-label">// Золотое правило rebase</div>
+      <strong>Никогда не делай rebase для коммитов, которые уже отправлены и доступны другим людям.</strong> Rebase меняет хэши коммитов; чужие клоны будут думать, что у них есть ваши коммиты, а на самом деле — нет. Получится хаос.
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="note-section" id="cherrypick">
+    <h2><span class="num">// 13</span>Cherry-pick, revert, reset</h2>
+
+    <h3>git cherry-pick — взять один коммит</h3>
+    <p>Применяет указанный коммит из другой ветки на текущую. Создаёт новый коммит с новым хэшем (но тем же содержанием и сообщением).</p>
+
+<pre><code><span class="cmt"># Применить коммит a3f1b2 на текущую ветку</span>
+git cherry-pick a3f1b2
+
+<span class="cmt"># Несколько коммитов</span>
+git cherry-pick a3f1b2 c5d3e4
+
+<span class="cmt"># Диапазон (НЕ включая первый!)</span>
+git cherry-pick a3f1b2..c5d3e4
+
+<span class="cmt"># Без создания коммита — оставить изменения в индексе</span>
+git cherry-pick -n a3f1b2
+
+<span class="cmt"># Конфликт — решить и continue</span>
+git cherry-pick --continue
+git cherry-pick --abort</code></pre>
+
+    <p><strong>Применение:</strong> срочно перенести багфикс из <code>main</code> в <code>release/v1.0</code> без слияния всех остальных изменений.</p>
+
+    <h3>git revert — отменить коммит безопасно</h3>
+    <p>Создаёт новый коммит, который <em>обратит</em> изменения указанного коммита. История не переписывается.</p>
+
+<pre><code><span class="cmt"># Отменить последний коммит</span>
+git revert HEAD
+
+<span class="cmt"># Отменить конкретный коммит</span>
+git revert a3f1b2
+
+<span class="cmt"># Отменить несколько без создания N коммитов</span>
+git revert --no-commit HEAD~3..HEAD
+git commit -m <span class="str">"revert: rollback feature X"</span>
+
+<span class="cmt"># Revert merge-коммита (надо указать -m 1 — какого родителя считать "правильным")</span>
+git revert -m 1 &lt;merge-commit&gt;</code></pre>
+
+    <h3>git reset — переписать историю</h3>
+    <p>Двигает указатель ветки на указанный коммит. <strong>Опасно</strong> для общих веток.</p>
+
+    <table class="compare">
+      <thead><tr><th>Флаг</th><th>HEAD</th><th>Index</th><th>Working tree</th></tr></thead>
+      <tbody>
+        <tr><td>--soft</td><td>двигает</td><td>не трогает</td><td>не трогает</td></tr>
+        <tr><td>--mixed (default)</td><td>двигает</td><td>сбрасывает</td><td>не трогает</td></tr>
+        <tr><td>--hard</td><td>двигает</td><td>сбрасывает</td><td>сбрасывает</td></tr>
+      </tbody>
+    </table>
+
+<pre><code><span class="cmt"># Откатить последние 3 коммита, но оставить изменения в working tree</span>
+git reset --soft HEAD~3
+
+<span class="cmt"># Откатить — изменения в working tree, но не staged</span>
+git reset HEAD~3
+
+<span class="cmt"># Полный откат — потерять всё</span>
+git reset --hard HEAD~3          <span class="cmt"># ОПАСНО</span>
+
+<span class="cmt"># Если уже запушено — придётся force push (только в своей ветке!)</span>
+git push --force-with-lease</code></pre>
+
+    <table class="compare">
+      <thead><tr><th>Команда</th><th>Меняет историю</th><th>Когда применять</th></tr></thead>
+      <tbody>
+        <tr><td><code>revert</code></td><td>Нет (создаёт новый коммит)</td><td>Отменить в shared ветке</td></tr>
+        <tr><td><code>reset</code></td><td>Да</td><td>Только в локальной/своей ветке</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 14 -->
+  <section class="note-section" id="stash">
+    <h2><span class="num">// 14</span>Stash и tags</h2>
+
+    <h3>git stash — отложить изменения</h3>
+    <p>«Прячет» текущие незакоммиченные изменения в стек, оставляя working tree чистым.</p>
+
+<pre><code><span class="cmt"># Спрятать</span>
+git stash                           <span class="cmt"># только tracked файлы</span>
+git stash -u                        <span class="cmt"># + untracked</span>
+git stash -a                        <span class="cmt"># + игнорируемые</span>
+git stash push -m <span class="str">"work in progress on login"</span>
+
+<span class="cmt"># Посмотреть, что лежит</span>
+git stash list
+<span class="cmt"># stash@{0}: WIP on feature/login: ...</span>
+<span class="cmt"># stash@{1}: On main: work in progress on login</span>
+
+git stash show stash@{0}            <span class="cmt"># краткий diff</span>
+git stash show -p stash@{0}         <span class="cmt"># полный diff</span>
+
+<span class="cmt"># Вернуть</span>
+git stash pop                       <span class="cmt"># вернуть последний и удалить из стека</span>
+git stash apply stash@{1}           <span class="cmt"># вернуть, НЕ удаляя из стека</span>
+
+<span class="cmt"># Удалить</span>
+git stash drop stash@{0}
+git stash clear                     <span class="cmt"># удалить все</span></code></pre>
+
+    <p><strong>Применение:</strong> внезапно нужно переключиться на другую ветку для срочного фикса, а текущие изменения ещё не готовы для коммита.</p>
+
+    <h3>git tag — метки версий</h3>
+
+<pre><code><span class="cmt"># Лёгкий тег (просто указатель)</span>
+git tag v1.0.0
+
+<span class="cmt"># Аннотированный тег (с автором, датой, сообщением — для релизов!)</span>
+git tag -a v1.0.0 -m <span class="str">"Release 1.0.0"</span>
+
+<span class="cmt"># Тег на конкретный коммит</span>
+git tag -a v0.9.0 a3f1b2 -m <span class="str">"Beta release"</span>
+
+<span class="cmt"># Просмотр</span>
+git tag                          <span class="cmt"># все теги</span>
+git tag -l <span class="str">"v1.*"</span>             <span class="cmt"># фильтр</span>
+git show v1.0.0
+
+<span class="cmt"># Отправить теги на remote (по умолчанию push их НЕ шлёт!)</span>
+git push origin v1.0.0           <span class="cmt"># один тег</span>
+git push --tags                  <span class="cmt"># все теги</span>
+
+<span class="cmt"># Удалить</span>
+git tag -d v1.0.0                <span class="cmt"># локально</span>
+git push origin :refs/tags/v1.0.0  <span class="cmt"># на remote</span></code></pre>
+
+    <div class="callout info">
+      <div class="callout-label">// SemVer</div>
+      Стандарт версионирования <strong>MAJOR.MINOR.PATCH</strong>: <code>v1.4.2</code>. MAJOR — breaking changes, MINOR — новая функциональность совместимо, PATCH — багфиксы. Подробно: <a href="https://semver.org/lang/ru/" style="color:var(--accent)">semver.org/lang/ru</a>.
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section class="note-section" id="reflog">
+    <h2><span class="num">// 15</span>Reflog и восстановление потерянных коммитов</h2>
+
+    <p><code>git reflog</code> — журнал всех движений HEAD за последние ~90 дней. Это спасательный круг, когда кажется, что коммиты потеряны.</p>
+
+<pre><code>git reflog
+<span class="cmt"># a3f1b2 HEAD@{0}: commit: feat: add login</span>
+<span class="cmt"># b4c2d3 HEAD@{1}: reset: moving to HEAD~3   ← вот тут я "потерял" коммиты</span>
+<span class="cmt"># c5d3e4 HEAD@{2}: commit: refactor</span></code></pre>
+
+    <h3>Восстановить потерянный коммит</h3>
+<pre><code><span class="cmt"># Найти хэш потерянного коммита через reflog</span>
+git reflog
+
+<span class="cmt"># Создать ветку прямо на нём</span>
+git branch recovery c5d3e4
+
+<span class="cmt"># Или сразу переключиться</span>
+git checkout c5d3e4
+git switch -c recovery</code></pre>
+
+    <h3>Восстановить ветку, удалённую через <code>branch -D</code></h3>
+<pre><code>git reflog                       <span class="cmt"># найти последний коммит удалённой ветки</span>
+git branch &lt;ветка&gt; &lt;хэш&gt;         <span class="cmt"># создать заново</span></code></pre>
+
+    <div class="callout tip">
+      <div class="callout-label">// Главное</div>
+      Git очень редко по-настоящему теряет данные. Даже после <code>reset --hard</code> и <code>branch -D</code> коммиты живут в <code>.git/objects/</code> ещё ~90 дней (до запуска <code>git gc</code>). Если что-то «потерялось» — <code>git reflog</code>.
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section class="note-section" id="pr">
+    <h2><span class="num">// 16</span>Pull Request workflow</h2>
+
+    <p>PR (на GitHub) или MR (на GitLab) — это не команда Git, а функция платформы: «прошу влить мою ветку в основную». Включает в себя обсуждение, code review, автотесты в CI.</p>
+
+    <h3>Полный цикл PR</h3>
+    <ol>
+      <li><strong>Sync с main:</strong>
+<pre><code>git switch main
+git pull</code></pre>
+      </li>
+      <li><strong>Ветка под задачу:</strong>
+<pre><code>git switch -c feature/INGEST-142-import-csv</code></pre>
+      </li>
+      <li><strong>Работаем, коммитим часто:</strong>
+<pre><code>git add -p
+git commit -m <span class="str">"feat(ingest): parse CSV header"</span>
+git commit -m <span class="str">"feat(ingest): validate row types"</span>
+git commit -m <span class="str">"test(ingest): cover edge cases"</span></code></pre>
+      </li>
+      <li><strong>Перед PR — подчистить и обновиться:</strong>
+<pre><code>git rebase -i origin/main        <span class="cmt"># сжать "fix typo" коммиты</span>
+git rebase origin/main           <span class="cmt"># подтянуть свежий main</span></code></pre>
+      </li>
+      <li><strong>Push и открыть PR:</strong>
+<pre><code>git push -u origin feature/INGEST-142-import-csv
+gh pr create --title <span class="str">"feat(ingest): import CSV"</span> --body <span class="str">"Closes INGEST-142"</span></code></pre>
+      </li>
+      <li><strong>Code review:</strong> ревьюеры пишут комментарии. Отвечаешь, правишь.
+<pre><code>git add fixed-file
+git commit --amend                 <span class="cmt"># если правка тривиальная</span>
+<span class="cmt"># или новый коммит "review fixes" — на вкус команды</span>
+git push --force-with-lease</code></pre>
+      </li>
+      <li><strong>CI зелёный + апрувы → squash merge.</strong></li>
+      <li><strong>Чистим:</strong>
+<pre><code>git switch main &amp;&amp; git pull
+git branch -d feature/INGEST-142-import-csv
+git fetch --prune                 <span class="cmt"># удалить локальные origin/feature/...</span></code></pre>
+      </li>
+    </ol>
+
+    <h3>GitHub CLI (gh)</h3>
+<pre><code>gh pr create                    <span class="cmt"># создать PR из текущей ветки</span>
+gh pr list                      <span class="cmt"># все открытые PR</span>
+gh pr view 42                   <span class="cmt"># детали PR</span>
+gh pr checkout 42               <span class="cmt"># локально переключиться на чужой PR</span>
+gh pr review 42 --approve
+gh pr merge 42 --squash</code></pre>
+  </section>
+
+  <!-- 17 -->
+  <section class="note-section" id="cheatsheet">
+    <h2><span class="num">// 17</span>Шпаргалка команд</h2>
+
+    <h3>Ежедневный набор (90% работы)</h3>
+<pre><code>git status                              <span class="cmt"># что у меня сейчас</span>
+git add &lt;file&gt; / git add -p             <span class="cmt"># подготовить к коммиту</span>
+git commit -m <span class="str">"..."</span>                    <span class="cmt"># зафиксировать</span>
+git push                                <span class="cmt"># отправить</span>
+git pull                                <span class="cmt"># забрать</span>
+git switch &lt;branch&gt;                     <span class="cmt"># сменить ветку</span>
+git switch -c &lt;new-branch&gt;              <span class="cmt"># создать и переключиться</span>
+git log --oneline --graph --all         <span class="cmt"># посмотреть историю</span>
+git diff / git diff --staged            <span class="cmt"># что изменилось</span></code></pre>
+
+    <h3>Слияние и история</h3>
+<pre><code>git merge &lt;branch&gt;                      <span class="cmt"># слить</span>
+git merge --abort                       <span class="cmt"># отменить начатое слияние</span>
+git rebase &lt;branch&gt;                     <span class="cmt"># переехать на новую базу</span>
+git rebase -i HEAD~N                    <span class="cmt"># переписать N последних коммитов</span>
+git cherry-pick &lt;hash&gt;                  <span class="cmt"># применить один коммит</span></code></pre>
+
+    <h3>Восстановление и отмена</h3>
+<pre><code>git restore &lt;file&gt;                      <span class="cmt"># откатить файл к HEAD</span>
+git restore --staged &lt;file&gt;             <span class="cmt"># убрать из staging</span>
+git reset --soft HEAD~1                 <span class="cmt"># отменить коммит, оставить изменения</span>
+git revert &lt;hash&gt;                       <span class="cmt"># отменить безопасно (новый коммит)</span>
+git reflog                              <span class="cmt"># найти потерянное</span>
+git stash / git stash pop               <span class="cmt"># отложить / вернуть</span></code></pre>
+
+    <h3>Удалённые репозитории</h3>
+<pre><code>git clone &lt;url&gt;
+git remote -v / git remote add &lt;name&gt; &lt;url&gt;
+git fetch / git fetch --all --prune
+git push -u origin &lt;branch&gt;             <span class="cmt"># первый push новой ветки</span>
+git push --force-with-lease             <span class="cmt"># безопасный force</span>
+git push origin --delete &lt;branch&gt;       <span class="cmt"># удалить ветку на remote</span></code></pre>
+
+    <h3>Теги</h3>
+<pre><code>git tag -a v1.0.0 -m <span class="str">"Release"</span>         <span class="cmt"># создать аннотированный</span>
+git push --tags                         <span class="cmt"># отправить теги</span>
+git tag -d &lt;tag&gt; / git push origin :refs/tags/&lt;tag&gt;</code></pre>
+
+    <h3>Полезные алиасы</h3>
+<pre><code>git config --global alias.s <span class="str">"status -s"</span>
+git config --global alias.lg <span class="str">"log --oneline --graph --decorate --all"</span>
+git config --global alias.unstage <span class="str">"restore --staged"</span>
+git config --global alias.last <span class="str">"log -1 HEAD --stat"</span>
+git config --global alias.amend <span class="str">"commit --amend --no-edit"</span></code></pre>
+  </section>
+
+  <a class="back-link" href="../index.html#plan">← Вернуться к плану</a>
+
+  <footer>
+    <div>Kirill Neustroev · DevOps Roadmap 2026 · Конспект v1.0</div>
+    <div><a href="../index.html">← На главную</a></div>
+  </footer>
+
+</div>
+
+</body>
+</html>
