@@ -44,7 +44,7 @@ body { line-height: 1.7; font-size: 14px; }
 }
 .note-hero-meta span.tag-accent {
   color: var(--accent);
-  border-color: rgba(0,255,136,0.3);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .toc {
@@ -195,7 +195,7 @@ table.compare th {
   text-transform: uppercase;
   font-size: 10px;
 }
-table.compare tr:nth-child(even) td { background: rgba(26,26,36,0.4); }
+table.compare tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 60%, transparent); }
 
 .back-link {
   display: inline-block;
