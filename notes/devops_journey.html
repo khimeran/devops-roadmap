@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DevOps Journey</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">DevOps Journey</h1>
+</header>
+<p><strong>Дневник DevOps практики</strong></p>
+<p>Полное руководство по всем настройкам и конфигурациям</p>
+<p><em>Fedora 44 · РЕД ОС 8 · Docker · Git · Ansible · Prometheus ·
+Grafana</em></p>
+<p>Kirill Neustroev · 2026</p>
+<p><strong>Глава 1. Установка и настройка Fedora 44</strong></p>
+<p>Fedora 44 была установлена как основная рабочая система на
+планшете-ноутбуке Ninkear T40 с процессором Intel N100 (Alder Lake ULX),
+16 ГБ RAM, SSD 512 ГБ.</p>
+<p><strong>1.1 Создание установочной флешки</strong></p>
+<p>Поскольку установка производилась с MacBook (macOS 12.7.6),
+использовалась команда dd через терминал. Fedora Media Writer не
+поддерживал данную версию macOS.</p>
+<blockquote>
+<p># Найти флешку в системе</p>
+<p>diskutil list</p>
+<p><em># Флешка определилась как /dev/disk2 (124 ГБ, external)</em></p>
+<p><em># ISO образ смонтировался как /dev/disk3</em></p>
+<p># Размонтировать флешку</p>
+<p>diskutil unmountDisk /dev/disk2</p>
+<p># Записать образ на флешку</p>
+<p>sudo dd if=/dev/disk3 of=/dev/rdisk2 bs=4m</p>
+<p><em># rdisk2 — raw режим, работает значительно быстрее чем
+disk2</em></p>
+<p><strong>⚠️ Использование rdisk вместо disk ускоряет запись в
+несколько раз на macOS. Не перепутайте номер диска — запись на системный
+диск уничтожит macOS.</strong></p>
+</blockquote>
+<p><strong>1.2 Установка Fedora</strong></p>
+<ul>
+<li><p>Загрузка с флешки через Boot Menu (F7 или F12)</p></li>
+<li><p>Выбор языка: Русский</p></li>
+<li><p>Место установки: автоматическая разметка</p></li>
+<li><p>Без шифрования диска</p></li>
+<li><p>Подключение к WiFi во время установки (обязательно — Fedora 44
+требует сеть)</p></li>
+</ul>
+<blockquote>
+<p>❌ Ошибка: при установке без сети появлялось сообщение что невозможно
+продолжить</p>
+<p>✅ Подключиться к WiFi прямо в установщике перед продолжением</p>
+</blockquote>
+<p><strong>1.3 Первоначальная настройка системы</strong></p>
+<p><strong>Обновление системы</strong></p>
+<blockquote>
+<p>sudo dnf upgrade --refresh -y --disablerepo=fedora-cisco-openh264</p>
+<p><em># --disablerepo=fedora-cisco-openh264 — пакеты Cisco недоступны
+из России (ошибка 403)</em></p>
+<p>❌ Ошибка: openh264 не скачивался — сервер Cisco возвращал 403
+Forbidden</p>
+<p>✅ sudo dnf config-manager setopt fedora-cisco-openh264.enabled=0 —
+отключить репозиторий навсегда</p>
+</blockquote>
+<p><strong>Отключение запроса пароля sudo</strong></p>
+<blockquote>
+<p>sudo visudo</p>
+<p><em># Найти строку: %wheel ALL=(ALL) ALL</em></p>
+<p><em># Заменить на: %wheel ALL=(ALL) NOPASSWD: ALL</em></p>
+</blockquote>
+<p><strong>Установка базовых инструментов</strong></p>
+<blockquote>
+<p>sudo dnf install -y git curl wget vim htop fastfetch aria2</p>
+<p>sudo dnf install -y gnome-tweaks gnome-extensions-app</p>
+<p>sudo dnf install -y gnome-shell-extension-dash-to-panel</p>
+</blockquote>
+<p><strong>Настройка интерфейса GNOME</strong></p>
+<blockquote>
+<p># Отключить горячий угол</p>
+<p>gsettings set org.gnome.desktop.interface enable-hot-corners
+false</p>
+<p># Добавить кнопки свернуть и развернуть</p>
+<p>gsettings set org.gnome.desktop.wm.preferences button-layout
+'appmenu:minimize,maximize,close'</p>
+<p><strong>⚠️ Команды gsettings нужно выполнять от обычного пользователя
+(не root) в графической сессии GNOME. Иначе ошибка: failed to commit
+changes to dconf: Unable to autolaunch D-Bus без X11
+$DISPLAY</strong></p>
+</blockquote>
+<p><strong>Установка KDE Plasma</strong></p>
+<blockquote>
+<p>sudo dnf install -y @kde-desktop sddm</p>
+<p>sudo systemctl enable sddm</p>
+<p># Установить Plank Dock (аналог macOS Dock)</p>
+<p>sudo dnf install -y plank</p>
+<p># Тёмная тема KDE</p>
+<p>plasma-apply-colorscheme BreezeDark</p>
+</blockquote>
+<p><strong>Подключение RPM Fusion репозиториев</strong></p>
+<blockquote>
+<p>sudo dnf install -y
+https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm
+-E %fedora).noarch.rpm</p>
+<p>sudo dnf install -y
+https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm
+-E %fedora).noarch.rpm</p>
+<p># Установка медиа кодеков</p>
+<p>sudo dnf install -y ffmpeg vlc --allowerasing</p>
+<p><em># --allowerasing — заменить ffmpeg-free на полный ffmpeg из RPM
+Fusion</em></p>
+</blockquote>
+<p><strong>1.4 Пакетные менеджеры в Fedora</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Менеджер</strong></td>
+<td><strong>Тип пакетов</strong></td>
+<td><strong>Когда использовать</strong></td>
+</tr>
+<tr>
+<td>DNF</td>
+<td>RPM — системные пакеты</td>
+<td>Серверное ПО, системные утилиты</td>
+</tr>
+<tr>
+<td>Flatpak</td>
+<td>Изолированные приложения</td>
+<td>Десктопные приложения (DBeaver, браузеры)</td>
+</tr>
+<tr>
+<td>Snap</td>
+<td>Изолированные приложения</td>
+<td>Если нет в DNF и Flatpak</td>
+</tr>
+<tr>
+<td>pip</td>
+<td>Python пакеты</td>
+<td>Python библиотеки в проектах</td>
+</tr>
+</tbody>
+</table>
+<p><strong>1.5 Настройка aria2 для быстрого скачивания</strong></p>
+<blockquote>
+<p># aria2c с 16 параллельными соединениями</p>
+<p># -x 16 — максимум соединений на сервер</p>
+<p># -s 16 — разбить файл на 16 частей</p>
+<p># -c — продолжить при обрыве</p>
+<p>aria2c -x 16 -s 16 -c https://example.com/file.iso</p>
+<p>💡 aria2c обходит ограничение скорости на одно соединение. Если
+сервер ограничивает до 500 КБ/с на соединение — 16 соединений дадут 8
+МБ/с.</p>
+</blockquote>
+<p><strong>Глава 2. Настройка SSH</strong></p>
+<p>SSH настраивался на двух машинах: Fedora (рабочая станция) и РЕД ОС
+(виртуальный сервер). Также настраивалось подключение с телефона Android
+через Termius.</p>
+<p><strong>2.1 Настройка SSH сервера на Fedora</strong></p>
+<blockquote>
+<p>sudo dnf install -y openssh-server</p>
+<p>sudo systemctl enable --now sshd</p>
+<p># Настройка конфига</p>
+<p>sudo nano /etc/ssh/sshd_config</p>
+<p><em># Port 2222 — нестандартный порт для безопасности</em></p>
+<p><em># PermitRootLogin no — запрет входа под root</em></p>
+<p><em># MaxAuthTries 3 — максимум попыток ввода пароля</em></p>
+<p><em># ClientAliveInterval 600 — таймаут неактивной сессии</em></p>
+<p># Разрешить порт в SELinux (обязательно для Fedora/RHEL!)</p>
+<p>sudo semanage port -a -t ssh_port_t -p tcp 2222</p>
+<p># Открыть порт в firewall</p>
+<p>sudo firewall-cmd --zone=FedoraWorkstation --permanent
+--add-port=2222/tcp</p>
+<p>sudo firewall-cmd --reload</p>
+<p>❌ Ошибка: SSH не запускался после смены порта —
+status=255/EXCEPTION</p>
+<p>✅ SELinux блокировал нестандартный порт. Решение: semanage port -a
+-t ssh_port_t -p tcp 2222</p>
+</blockquote>
+<p><strong>2.2 Настройка SSH ключей</strong></p>
+<blockquote>
+<p># Генерация ключа на клиентской машине</p>
+<p># -t ed25519 — современный алгоритм (быстрее и безопаснее RSA)</p>
+<p># -C — комментарий для идентификации ключа</p>
+<p>ssh-keygen -t ed25519 -C "redos-server"</p>
+<p># Копирование публичного ключа на сервер</p>
+<p># -i — указать файл ключа</p>
+<p># -p — нестандартный порт</p>
+<p>ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 2222
+adminos@192.168.56.101</p>
+<p># Создать конфиг для удобного подключения</p>
+<p>nano ~/.ssh/config</p>
+<p>Host redos</p>
+<p>HostName 192.168.56.101</p>
+<p>User adminos</p>
+<p>Port 2222</p>
+<p>IdentityFile ~/.ssh/id_ed25519</p>
+<p># Теперь подключение одной командой</p>
+<p>ssh redos</p>
+<p>❌ Ошибка: ssh-keygen -t ed25519 -c (маленькая c) — ошибка 'too many
+arguments'</p>
+<p>✅ -C (заглавная C) — комментарий. -c (маленькая c) — другая функция,
+требует доп. аргументов</p>
+</blockquote>
+<p><strong>2.3 Добавление SSH ключа на GitHub</strong></p>
+<blockquote>
+<p># Просмотр публичного ключа для копирования</p>
+<p>cat ~/.ssh/id_ed25519.pub</p>
+<p># Проверить подключение к GitHub</p>
+<p>ssh -T git@github.com</p>
+<p><em># Ожидаемый ответ: Hi khimeran! You've successfully
+authenticated</em></p>
+<p>💡 При первом подключении к любому SSH серверу появляется
+предупреждение о неизвестном хосте. Нужно ввести 'yes' — fingerprint
+сохранится в ~/.ssh/known_hosts и больше не будет спрашивать.</p>
+</blockquote>
+<p><strong>2.4 Настройка fail2ban</strong></p>
+<blockquote>
+<p>sudo dnf install -y fail2ban</p>
+<p># Создать конфиг /etc/fail2ban/jail.local</p>
+<p>[DEFAULT]</p>
+<p>bantime = 3600 # блокировка на 1 час</p>
+<p>findtime = 600 # период наблюдения 10 минут</p>
+<p>maxretry = 3 # максимум попыток</p>
+<p>ignoreip = 127.0.0.1/8 192.168.56.0/24 # не блокировать локальную
+сеть</p>
+<p>[sshd]</p>
+<p>enabled = true</p>
+<p>port = 2222</p>
+<p>logpath = /var/log/secure</p>
+<p>sudo systemctl enable --now fail2ban</p>
+<p>sudo fail2ban-client status sshd</p>
+</blockquote>
+<p><strong>Глава 3. Виртуальная машина и РЕД ОС 8</strong></p>
+<p><strong>3.1 Установка VirtualBox</strong></p>
+<blockquote>
+<p>sudo dnf install -y virtualbox</p>
+<p>sudo usermod -aG vboxusers kirill</p>
+<p>sudo modprobe vboxdrv</p>
+</blockquote>
+<p><strong>3.2 Скачивание РЕД ОС 8</strong></p>
+<blockquote>
+<p># Скачивание через aria2c для обхода ограничений скорости</p>
+<p>aria2c -x 16 -s 16
+https://files.red-soft.ru/redos/8.0/x86_64/iso/redos-8-20250711.4-Everything-x86_64-DVD1.iso</p>
+<p><em># Файл около 6 ГБ. aria2c значительно быстрее curl/wget</em></p>
+</blockquote>
+<p><strong>3.3 Создание виртуальной машины</strong></p>
+<p>Конфигурация виртуальной машины redos-server:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Параметр</strong></td>
+<td><strong>Значение</strong></td>
+<td><strong>Комментарий</strong></td>
+</tr>
+<tr>
+<td>Тип ОС</td>
+<td>Red Hat (64-bit)</td>
+<td>РЕД ОС основана на RHEL</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>4096 МБ</td>
+<td>Достаточно для сервера без GUI</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>2 ядра</td>
+<td>Из 4 доступных на N100</td>
+</tr>
+<tr>
+<td>Диск</td>
+<td>50 ГБ</td>
+<td>VDI, динамически выделяемый</td>
+</tr>
+<tr>
+<td>EFI</td>
+<td>Отключено</td>
+<td>Проще для установки РЕД ОС</td>
+</tr>
+<tr>
+<td>Адаптер 1</td>
+<td>NAT</td>
+<td>Интернет через хост</td>
+</tr>
+<tr>
+<td>Адаптер 2</td>
+<td>Host-Only (vboxnet0)</td>
+<td>Прямое подключение к ВМ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3.4 Сетевые адаптеры</strong></p>
+<p>Два сетевых адаптера нужны для разных целей:</p>
+<ul>
+<li><p>NAT (enp0s3) — IP 10.0.2.15 — выход в интернет через
+хост</p></li>
+<li><p>Host-Only (enp0s8) — IP 192.168.56.101 — прямое подключение с
+Fedora</p></li>
+</ul>
+<p><strong>3.5 Установка РЕД ОС 8</strong></p>
+<p>Установщик Anaconda — те же шаги что и в Fedora:</p>
+<ol type="1">
+<li><p>Язык: Русский</p></li>
+<li><p>Место установки: автоматическая разметка</p></li>
+<li><p>Без шифрования</p></li>
+<li><p>Выбор программ: Минимальная установка (без GUI)</p></li>
+<li><p>Пароль root + создание пользователя adminos
+(администратор)</p></li>
+<li><p>Лицензионное соглашение: принять</p></li>
+<li><p>Начать установку</p></li>
+</ol>
+<p><strong>3.6 Первоначальная настройка РЕД ОС</strong></p>
+<blockquote>
+<p># Установить hostname</p>
+<p>sudo hostnamectl set-hostname redos-server</p>
+<p># Обновить систему</p>
+<p>sudo dnf upgrade -y</p>
+<p># Установить репозитории</p>
+<p>sudo dnf install -y epel-release</p>
+<p>❌ Ошибка: медленная скорость обновления — несколько КБ/с с серверов
+РЕД ОС</p>
+<p>✅ Проблема в медленных зеркалах red-soft.ru. Обновление занимает
+больше времени чем обычно — нужно просто подождать</p>
+</blockquote>
+<p><strong>3.7 SELinux на РЕД ОС</strong></p>
+<p>РЕД ОС основана на RHEL — SELinux включён по умолчанию в режиме
+Enforcing. Это источник многих неожиданных ошибок доступа.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>getenforce</td>
+<td>Показать режим: Enforcing/Permissive/Disabled</td>
+</tr>
+<tr>
+<td>sudo setenforce 0</td>
+<td>Временно перевести в Permissive (только логи)</td>
+</tr>
+<tr>
+<td>sudo setenforce 1</td>
+<td>Вернуть в Enforcing</td>
+</tr>
+<tr>
+<td>ls -Z файл</td>
+<td>Показать SELinux контекст файла</td>
+</tr>
+<tr>
+<td>sudo ausearch -m avc -ts recent</td>
+<td>Показать последние блокировки</td>
+</tr>
+<tr>
+<td>sudo chcon -Rt svirt_sandbox_file_t папка/</td>
+<td>Разрешить Docker читать файлы</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Глава 4. Docker — Установка и настройка</strong></p>
+<p><strong>4.1 Установка Docker на Fedora</strong></p>
+<blockquote>
+<p>sudo dnf install -y docker docker-compose</p>
+<p>sudo systemctl enable --now docker</p>
+<p># Добавить пользователя в группу docker (без sudo)</p>
+<p>sudo usermod -aG docker kirill</p>
+<p><em># После этого нужна перезагрузка для применения группы</em></p>
+</blockquote>
+<p><strong>4.2 Проверка установки</strong></p>
+<blockquote>
+<p>docker run hello-world</p>
+<p><em># Должно вывести: Hello from Docker!</em></p>
+</blockquote>
+<p><strong>4.3 Основные концепции Docker</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Концепция</strong></td>
+<td><strong>Описание</strong></td>
+<td><strong>Пример команды</strong></td>
+</tr>
+<tr>
+<td>Image</td>
+<td>Шаблон для контейнера</td>
+<td>docker build -t myapp:1.0 .</td>
+</tr>
+<tr>
+<td>Container</td>
+<td>Запущенный экземпляр образа</td>
+<td>docker run -d myapp:1.0</td>
+</tr>
+<tr>
+<td>Volume</td>
+<td>Постоянное хранилище данных</td>
+<td>docker volume create mydata</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Сеть между контейнерами</td>
+<td>docker network create mynet</td>
+</tr>
+<tr>
+<td>Registry</td>
+<td>Хранилище образов</td>
+<td>docker push myapp:1.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4.4 Layer Cache — оптимизация сборки</strong></p>
+<p>Каждая команда в Dockerfile создаёт слой. Слои кэшируются. Правило:
+сначала то что меняется редко, потом то что меняется часто.</p>
+<blockquote>
+<p># ПЛОХО — код меняется, зависимости пересобираются каждый раз</p>
+<p>COPY . /app</p>
+<p>RUN pip install -r requirements.txt</p>
+<p># ХОРОШО — зависимости кэшируются отдельно</p>
+<p>COPY requirements.txt . # меняется редко → кэш</p>
+<p>RUN pip install -r requirements.txt # берётся из кэша</p>
+<p>COPY . /app # меняется часто → пересобирается</p>
+<p>💡 Правильный порядок слоёв сокращает время сборки с 5 минут до 10
+секунд при изменении только кода.</p>
+</blockquote>
+<p><strong>4.5 Volumes vs Bind Mounts</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td></td>
+<td><strong>Volume</strong></td>
+<td><strong>Bind Mount</strong></td>
+</tr>
+<tr>
+<td>Управление</td>
+<td>Docker</td>
+<td>Вы сами</td>
+</tr>
+<tr>
+<td>Путь</td>
+<td>Автоматически</td>
+<td>Указываете вручную</td>
+</tr>
+<tr>
+<td>Использование</td>
+<td>Данные БД, продакшн</td>
+<td>Конфиги, разработка</td>
+</tr>
+<tr>
+<td>Производительность</td>
+<td>Выше</td>
+<td>Немного ниже</td>
+</tr>
+<tr>
+<td>Пример</td>
+<td>- mydata:/var/lib/postgresql</td>
+<td>- ./nginx.conf:/etc/nginx/nginx.conf:ro</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4.6 SELinux и Docker на Fedora</strong></p>
+<p>Docker монтирует файлы с хоста в контейнеры через volumes. SELinux
+блокирует этот доступ если у файлов неправильный контекст
+безопасности.</p>
+<blockquote>
+<p># Исправить SELinux контекст для папки монтируемой в Docker</p>
+<p>sudo chcon -Rt svirt_sandbox_file_t ~/nginx/</p>
+<p>sudo chcon -Rt svirt_sandbox_file_t ~/etr_study_api/ops/</p>
+<p>❌ Ошибка: permission denied при монтировании конфигов Prometheus и
+Nginx</p>
+<p>✅ sudo chcon -Rt svirt_sandbox_file_t папка/ — изменить SELinux
+контекст</p>
+</blockquote>
+<p><strong>4.7 Диагностика Docker</strong></p>
+<blockquote>
+<p># Статус всех контейнеров</p>
+<p>docker ps -a</p>
+<p># Логи контейнера</p>
+<p>docker logs --tail 50 контейнер</p>
+<p>docker logs -f контейнер # следить в реальном времени</p>
+<p># Зайти внутрь контейнера</p>
+<p>docker exec -it контейнер bash</p>
+<p># Потребление ресурсов</p>
+<p>docker stats</p>
+<p># Детальная информация</p>
+<p>docker inspect контейнер | grep -i oomkilled</p>
+<p><em># OOMKilled: true — контейнер убит из-за нехватки памяти</em></p>
+</blockquote>
+<p><strong>Глава 5. Развёртывание приложения
+(etr_study_api)</strong></p>
+<p><strong>5.1 Клонирование проекта</strong></p>
+<blockquote>
+<p>git clone https://github.com/iboiarkin96/etr_study_api.git</p>
+<p>cd etr_study_api</p>
+</blockquote>
+<p>Проект оказался профессионально написан несмотря на заявления
+автора:</p>
+<ul>
+<li><p>FastAPI + Python 3.11</p></li>
+<li><p>Dockerfile уже присутствовал</p></li>
+<li><p>Alembic для миграций БД</p></li>
+<li><p>Prometheus и Grafana конфиги</p></li>
+<li><p>Docker Compose файлы</p></li>
+<li><p>SQLite база данных</p></li>
+</ul>
+<p><strong>5.2 Настройка переменных окружения</strong></p>
+<blockquote>
+<p>cp env/example .env</p>
+<p>nano .env</p>
+<p><em># Изменить: APP_HOST=127.0.0.1 → APP_HOST=0.0.0.0</em></p>
+<p><em># 0.0.0.0 — слушать на всех интерфейсах (не только
+localhost)</em></p>
+<p><strong>⚠️ APP_HOST=127.0.0.1 делает приложение доступным ТОЛЬКО с
+самого сервера. Для доступа из сети необходимо 0.0.0.0</strong></p>
+</blockquote>
+<p><strong>5.3 Сборка и запуск</strong></p>
+<blockquote>
+<p># Собрать Docker образ</p>
+<p>docker build -t study-app-api:local .</p>
+<p># Запустить контейнер</p>
+<p>docker run -d \</p>
+<p>--name study-app \</p>
+<p>-p 8000:8000 \</p>
+<p>--env-file .env \</p>
+<p>study-app-api:local</p>
+<p># Проверить работоспособность</p>
+<p>curl http://localhost:8000/live</p>
+<p><em># {"status":"alive","app_env":"dev"}</em></p>
+<p>curl http://localhost:8000/ready</p>
+<p><em># {"status":"ready","checks":{"database":"ok"}}</em></p>
+</blockquote>
+<p><strong>5.4 Запуск мониторинга</strong></p>
+<blockquote>
+<p># Исправить host.docker.internal для Linux</p>
+<p># В ops/prometheus/prometheus.yml заменить:</p>
+<p># host.docker.internal:8000 → 192.168.0.108:8000</p>
+<p><em># host.docker.internal работает только на Mac и Windows, не на
+Linux</em></p>
+<p># Применить SELinux контекст</p>
+<p>sudo chcon -Rt svirt_sandbox_file_t ops/</p>
+<p>docker compose -f docker-compose.observability.yml up -d</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Сервис</strong></td>
+<td><strong>Порт</strong></td>
+<td><strong>Статус</strong></td>
+</tr>
+<tr>
+<td>FastAPI приложение</td>
+<td>8000</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>9090</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>3001</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Blackbox Exporter</td>
+<td>9115</td>
+<td>✅ Работает</td>
+</tr>
+</tbody>
+</table>
+<p><strong>5.5 Настройка Nginx как обратного прокси</strong></p>
+<p>Nginx объединяет все сервисы на одном порту 80:</p>
+<blockquote>
+<p># Структура конфигов</p>
+<p>~/nginx/</p>
+<p>nginx.conf — главный конфиг</p>
+<p>conf.d/</p>
+<p>app.conf — виртуальный хост</p>
+<p># Запуск Nginx в Docker</p>
+<p>docker run -d \</p>
+<p>--name nginx-proxy \</p>
+<p>-p 80:80 \</p>
+<p>-v ~/etr_study_api/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \</p>
+<p>-v ~/etr_study_api/nginx/conf.d:/etc/nginx/conf.d:ro \</p>
+<p>nginx:alpine</p>
+</blockquote>
+<p>Маршрутизация через Nginx:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>URL</strong></td>
+<td><strong>Куда проксирует</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>/</td>
+<td>docs:8080</td>
+<td>Статическая документация</td>
+</tr>
+<tr>
+<td>/docs</td>
+<td>app:8000/docs</td>
+<td>Swagger UI</td>
+</tr>
+<tr>
+<td>/api</td>
+<td>app:8000</td>
+<td>REST API</td>
+</tr>
+<tr>
+<td>/live</td>
+<td>app:8000/live</td>
+<td>Healthcheck</td>
+</tr>
+<tr>
+<td>/grafana/</td>
+<td>grafana:3000</td>
+<td>Grafana дашборды</td>
+</tr>
+<tr>
+<td>/prometheus/</td>
+<td>prometheus:9090</td>
+<td>Метрики</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>❌ Ошибка: nginx.conf оказался папкой вместо файла</p>
+<p>✅ rm -rf nginx/nginx.conf &amp;&amp; cp ~/nginx/nginx.conf
+~/etr_study_api/nginx/nginx.conf</p>
+</blockquote>
+<p><strong>5.6 Единый docker-compose.yml стек</strong></p>
+<p>Все сервисы объединены в один файл — поднимается одной командой:</p>
+<blockquote>
+<p>docker compose up -d --build</p>
+<p># Финальная проверка</p>
+<p>docker compose ps</p>
+<p><em># study-app Up (healthy) 8000/tcp</em></p>
+<p><em># study-nginx Up 0.0.0.0:80-&gt;80/tcp</em></p>
+<p><em># study-prometheus Up 9090/tcp</em></p>
+<p><em># study-grafana Up 3000/tcp</em></p>
+<p><em># study-blackbox Up 9115/tcp</em></p>
+<p># Автозапуск после перезагрузки</p>
+<p># restart: unless-stopped в docker-compose.yml</p>
+<p># Docker автоматически поднимает контейнеры после reboot</p>
+</blockquote>
+<p><strong>Глава 6. Ansible — Автоматизация настройки</strong></p>
+<p><strong>6.1 Установка Ansible</strong></p>
+<blockquote>
+<p>sudo dnf install -y ansible</p>
+<p>ansible --version</p>
+<p><em># ansible [core 2.20.4]</em></p>
+</blockquote>
+<p><strong>6.2 Структура проекта</strong></p>
+<blockquote>
+<p>~/fedora-setup/</p>
+<p>inventory.ini — список хостов</p>
+<p>setup.yml — главный playbook</p>
+<p>roles/</p>
+<p>base/tasks/main.yml — базовые пакеты</p>
+<p>security/tasks/main.yml — безопасность</p>
+<p>docker/tasks/main.yml — Docker</p>
+<p>kde/tasks/main.yml — KDE Plasma</p>
+<p>development/tasks/main.yml — инструменты</p>
+</blockquote>
+<p><strong>6.3 Inventory файл</strong></p>
+<blockquote>
+<p># inventory.ini</p>
+<p>[local]</p>
+<p>localhost ansible_connection=local</p>
+<p><em># ansible_connection=local — управляем локальной машиной без
+SSH</em></p>
+</blockquote>
+<p><strong>6.4 Запуск playbook</strong></p>
+<blockquote>
+<p># Проверка синтаксиса</p>
+<p>ansible-playbook -i inventory.ini setup.yml --syntax-check</p>
+<p># Dry-run — показать что будет сделано без применения</p>
+<p># --check — не вносить изменения</p>
+<p># --diff — показать что именно изменится в файлах</p>
+<p>ansible-playbook -i inventory.ini setup.yml --check --diff</p>
+<p># Реальный запуск</p>
+<p>ansible-playbook -i inventory.ini setup.yml</p>
+</blockquote>
+<p><strong>6.5 Результаты выполнения</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Роль</strong></td>
+<td><strong>Задачи</strong></td>
+<td><strong>Результат</strong></td>
+</tr>
+<tr>
+<td>base</td>
+<td>Обновление, базовые пакеты, RPM Fusion, sudo</td>
+<td>✅ Выполнено</td>
+</tr>
+<tr>
+<td>security</td>
+<td>fail2ban, SSH настройка</td>
+<td>✅ Выполнено</td>
+</tr>
+<tr>
+<td>docker</td>
+<td>Docker, группа docker</td>
+<td>✅ Выполнено</td>
+</tr>
+<tr>
+<td>kde</td>
+<td>KDE Plasma, SDDM, тема, кнопки</td>
+<td>✅ Выполнено</td>
+</tr>
+<tr>
+<td>development</td>
+<td>VirtualBox, Flatpak, DBeaver</td>
+<td>⚠️ DBeaver — таймаут сети</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>❌ Ошибка: kde роль — 'Unable to enable service sddm: symlink to
+gdm.service already exists'</p>
+<p>✅ Добавить задачу отключения GDM перед включением SDDM: systemctl
+disable gdm → systemctl enable sddm</p>
+<p>❌ Ошибка: development роль — 'Package moby-engine already
+installed'</p>
+<p>✅ Убрать Docker из списка devops_packages — он уже устанавливается в
+роли docker</p>
+</blockquote>
+<p><strong>6.6 Идемпотентность — главный принцип Ansible</strong></p>
+<p>Идемпотентность — многократный запуск playbook даёт тот же результат
+что и однократный. Ansible проверяет текущее состояние и вносит
+изменения только если нужно.</p>
+<blockquote>
+<p># НЕ идемпотентно — каждый запуск добавляет строку</p>
+<p>- shell: echo '127.0.0.1 host' &gt;&gt; /etc/hosts</p>
+<p># Идемпотентно — проверяет наличие строки</p>
+<p>- lineinfile:</p>
+<p>path: /etc/hosts</p>
+<p>line: '127.0.0.1 host'</p>
+<p>state: present</p>
+</blockquote>
+<p><strong>Глава 7. Git — Контроль версий</strong></p>
+<p><strong>7.1 Первоначальная настройка</strong></p>
+<blockquote>
+<p>git config --global user.name "Kirill"</p>
+<p>git config --global user.email "knv_chita@mail.ru"</p>
+<p>git config --global init.defaultBranch main</p>
+<p>git config --global core.editor vim</p>
+<p>git config --global core.excludesfile ~/.gitignore_global</p>
+</blockquote>
+<p><strong>7.2 Глобальный .gitignore</strong></p>
+<blockquote>
+<p># ~/.gitignore_global</p>
+<p>.env</p>
+<p>.env.*</p>
+<p>!.env.example</p>
+<p>*.pem</p>
+<p>*.key</p>
+<p>id_rsa</p>
+<p>id_ed25519</p>
+<p>*.log</p>
+<p>__pycache__/</p>
+<p>*.pyc</p>
+<p>venv/</p>
+<p>.idea/</p>
+<p>.vscode/</p>
+<p>.DS_Store</p>
+<p>💡 Глобальный .gitignore защищает секреты во ВСЕХ репозиториях
+автоматически. Настраивается один раз.</p>
+</blockquote>
+<p><strong>7.3 Основные команды</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Флаги</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>git init</td>
+<td></td>
+<td>Создать репозиторий</td>
+</tr>
+<tr>
+<td>git clone URL</td>
+<td>--depth=1</td>
+<td>Клонировать (--depth только последний коммит)</td>
+</tr>
+<tr>
+<td>git add файл</td>
+<td>-p (patch)</td>
+<td>Добавить в staging (-p — по кускам)</td>
+</tr>
+<tr>
+<td>git commit</td>
+<td>-m сообщение, -am</td>
+<td>Закоммитить (-am — add+commit)</td>
+</tr>
+<tr>
+<td>git push</td>
+<td>-u origin main</td>
+<td>Отправить (-u — установить upstream)</td>
+</tr>
+<tr>
+<td>git pull</td>
+<td>--rebase</td>
+<td>Получить изменения</td>
+</tr>
+<tr>
+<td>git log</td>
+<td>--oneline --graph --all</td>
+<td>История коммитов с графом</td>
+</tr>
+<tr>
+<td>git switch</td>
+<td>-c новая-ветка</td>
+<td>Переключить ветку (-c — создать)</td>
+</tr>
+<tr>
+<td>git merge</td>
+<td>--no-ff -m</td>
+<td>Слить ветку (--no-ff — всегда с коммитом)</td>
+</tr>
+<tr>
+<td>git stash</td>
+<td>pop, list, clear</td>
+<td>Временно сохранить изменения</td>
+</tr>
+<tr>
+<td>git restore</td>
+<td>--staged файл</td>
+<td>Убрать из staging</td>
+</tr>
+<tr>
+<td>git reset</td>
+<td>--hard HEAD~1</td>
+<td>Отменить коммит (--hard — с изменениями)</td>
+</tr>
+<tr>
+<td>git revert</td>
+<td>HEAD</td>
+<td>Безопасная отмена (создаёт новый коммит)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>7.4 Правила написания коммитов (Conventional
+Commits)</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Тип</strong></td>
+<td><strong>Когда использовать</strong></td>
+<td><strong>Пример</strong></td>
+</tr>
+<tr>
+<td>feat</td>
+<td>Новая функциональность</td>
+<td>feat: добавил авторизацию через JWT</td>
+</tr>
+<tr>
+<td>fix</td>
+<td>Исправление бага</td>
+<td>fix: исправил утечку памяти</td>
+</tr>
+<tr>
+<td>docs</td>
+<td>Документация</td>
+<td>docs: обновил README</td>
+</tr>
+<tr>
+<td>chore</td>
+<td>Обслуживание</td>
+<td>chore: обновил зависимости</td>
+</tr>
+<tr>
+<td>refactor</td>
+<td>Рефакторинг</td>
+<td>refactor: упростил функцию login</td>
+</tr>
+<tr>
+<td>test</td>
+<td>Тесты</td>
+<td>test: добавил тесты для API</td>
+</tr>
+<tr>
+<td>ci</td>
+<td>CI/CD</td>
+<td>ci: добавил GitHub Actions</td>
+</tr>
+<tr>
+<td>merge</td>
+<td>Слияние веток</td>
+<td>merge: добавил авторизацию</td>
+</tr>
+</tbody>
+</table>
+<p><strong>7.5 Ошибки из практики</strong></p>
+<blockquote>
+<p>❌ Ошибка: ветка создалась как 'master' вместо 'main'</p>
+<p>✅ git branch -m master main — переименовать. git config --global
+init.defaultBranch main — исправить для будущих репо</p>
+<p>❌ Ошибка: создали файл READMI.md вместо README.md</p>
+<p>✅ git mv READMI.md README.md — переименовать через Git (сохраняет
+историю)</p>
+<p>❌ Ошибка: попытка git commit без предварительного git add — 'индекс
+пуст'</p>
+<p>✅ Всегда: изменить файл → git add → git commit</p>
+<p>❌ Ошибка: *.env в .gitignore не защищает файл .env</p>
+<p>✅ *.env игнорирует файлы с расширением .env (prod.env). Для файла
+.env нужно писать именно .env</p>
+<p>❌ Ошибка: gitignore без точки — Git не видит файл</p>
+<p>✅ mv gitignore .gitignore — точка в начале делает файл скрытым в
+Linux</p>
+<p>❌ Ошибка: git merge branchA (без дефиса) — 'не является тем что
+можно слить'</p>
+<p>✅ Дефис важен: branch-A и branchA — разные ветки</p>
+</blockquote>
+<p><strong>7.6 Работа с GitHub</strong></p>
+<blockquote>
+<p># Добавить удалённый репозиторий</p>
+<p>git remote add origin git@github.com:khimeran/repo.git</p>
+<p># Первая отправка с установкой upstream</p>
+<p>git push -u origin main</p>
+<p># Последующие отправки</p>
+<p>git push</p>
+<p># Удалить ветку на GitHub</p>
+<p>git push origin --delete feature/xxx</p>
+</blockquote>
+<p><strong>Глава 8. Сети и Firewall</strong></p>
+<p><strong>8.1 Основные сетевые команды</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>ip a</td>
+<td>Список интерфейсов и IP адресов</td>
+</tr>
+<tr>
+<td>ip r</td>
+<td>Таблица маршрутизации</td>
+</tr>
+<tr>
+<td>ss -tlnp</td>
+<td>Открытые порты (t=TCP, l=listen, n=номера, p=процесс)</td>
+</tr>
+<tr>
+<td>ss -tlnp | grep 8080</td>
+<td>Найти что слушает на порту 8080</td>
+</tr>
+<tr>
+<td>ping -c 3 8.8.8.8</td>
+<td>Проверить связь (-c 3 = отправить 3 пакета)</td>
+</tr>
+<tr>
+<td>nslookup github.com</td>
+<td>DNS запрос</td>
+</tr>
+<tr>
+<td>curl -I https://example.com</td>
+<td>HTTP заголовки (HEAD запрос)</td>
+</tr>
+<tr>
+<td>curl ifconfig.me</td>
+<td>Узнать внешний IP</td>
+</tr>
+</tbody>
+</table>
+<p><strong>8.2 firewalld — управление firewall</strong></p>
+<blockquote>
+<p># Показать все правила активной зоны</p>
+<p>sudo firewall-cmd --list-all</p>
+<p># Открыть порт навсегда</p>
+<p># --permanent — сохранить после перезагрузки</p>
+<p># --reload — применить изменения</p>
+<p>sudo firewall-cmd --zone=FedoraWorkstation --permanent
+--add-port=8000/tcp</p>
+<p>sudo firewall-cmd --reload</p>
+<p># Открыть сервис по имени</p>
+<p>sudo firewall-cmd --permanent --add-service=http</p>
+<p># Закрыть порт</p>
+<p>sudo firewall-cmd --permanent --remove-port=8000/tcp</p>
+<p><strong>⚠️ --permanent без --reload не применяется! Всегда выполняйте
+firewall-cmd --reload после --permanent</strong></p>
+</blockquote>
+<p><strong>8.3 Firewall на разных дистрибутивах</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Дистрибутив</strong></td>
+<td><strong>Firewall</strong></td>
+<td><strong>Открыть порт</strong></td>
+</tr>
+<tr>
+<td>Fedora / RHEL / РЕД ОС</td>
+<td>firewalld</td>
+<td>firewall-cmd --add-port=80/tcp</td>
+</tr>
+<tr>
+<td>Ubuntu (новые)</td>
+<td>ufw</td>
+<td>ufw allow 80/tcp</td>
+</tr>
+<tr>
+<td>Ubuntu (старые)</td>
+<td>iptables</td>
+<td>iptables -A INPUT -p tcp --dport 80 -j ACCEPT</td>
+</tr>
+<tr>
+<td>Debian</td>
+<td>nftables</td>
+<td>nft add rule inet filter input tcp dport 80 accept</td>
+</tr>
+</tbody>
+</table>
+<p><strong>8.4 Проблемы с DNS</strong></p>
+<p>В процессе работы неоднократно возникали проблемы с разрешением имён
+(github.com не резолвился). Причина — systemd-resolved работал медленно
+или не отвечал.</p>
+<blockquote>
+<p># Временное исправление — указать Google DNS напрямую</p>
+<p>sudo bash -c 'echo "nameserver 8.8.8.8" &gt; /etc/resolv.conf'</p>
+<p># Проверить что DNS работает</p>
+<p>nslookup github.com</p>
+</blockquote>
+<p><strong>Глава 9. Мониторинг — Prometheus и Grafana</strong></p>
+<p><strong>9.1 Архитектура мониторинга</strong></p>
+<p>Стек мониторинга состоит из четырёх компонентов:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Компонент</strong></td>
+<td><strong>Порт</strong></td>
+<td><strong>Роль</strong></td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>9090</td>
+<td>Сбор и хранение метрик. Опрашивает цели каждые 15 секунд</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>3001</td>
+<td>Визуализация. Красивые дашборды на основе данных Prometheus</td>
+</tr>
+<tr>
+<td>Blackbox Exporter</td>
+<td>9115</td>
+<td>Проверка доступности URL (HTTP probe)</td>
+</tr>
+<tr>
+<td>Node Exporter</td>
+<td>9100</td>
+<td>Метрики сервера: CPU, RAM, диск, сеть</td>
+</tr>
+</tbody>
+</table>
+<p><strong>9.2 Конфиг Prometheus</strong></p>
+<blockquote>
+<p># ops/prometheus/prometheus.yml</p>
+<p>global:</p>
+<p>scrape_interval: 15s # опрашивать каждые 15 секунд</p>
+<p>evaluation_interval: 15s # проверять правила алертов</p>
+<p>scrape_configs:</p>
+<p>- job_name: "study-app-api"</p>
+<p>metrics_path: /metrics</p>
+<p>static_configs:</p>
+<p>- targets: ["app:8000"] # имя сервиса из docker-compose</p>
+<p>❌ Ошибка: host.docker.internal:8000 не работает на Linux</p>
+<p>✅ Заменить на реальный IP хоста (192.168.0.108:8000) или имя сервиса
+в Docker сети (app:8000)</p>
+</blockquote>
+<p><strong>9.3 SELinux и Prometheus</strong></p>
+<blockquote>
+<p>❌ Ошибка: permission denied при чтении prometheus.yml из
+контейнера</p>
+<p>✅ chmod -R 644 ops/prometheus/ &amp;&amp; sudo chcon -Rt
+svirt_sandbox_file_t ops/</p>
+</blockquote>
+<p><strong>9.4 Alerting rules</strong></p>
+<blockquote>
+<p># /etc/prometheus/rules/alerts.yml</p>
+<p>groups:</p>
+<p>- name: availability</p>
+<p>rules:</p>
+<p>- alert: ServiceDown</p>
+<p>expr: up == 0</p>
+<p>for: 5m # ждать 5 минут до срабатывания</p>
+<p>labels:</p>
+<p>severity: critical</p>
+<p>annotations:</p>
+<p>summary: "Сервис {{ $labels.job }} недоступен"</p>
+</blockquote>
+<p><strong>9.5 Grafana</strong></p>
+<p>Grafana автоматически загружает дашборды из папки
+ops/grafana/dashboards/ через provisioning. При запуске контейнера
+дашборды появляются автоматически.</p>
+<blockquote>
+<p># Учётные данные по умолчанию</p>
+<p># Логин: admin</p>
+<p># Пароль: admin (сменить после первого входа!)</p>
+</blockquote>
+<p><strong>Глава 10. DevOps план обучения</strong></p>
+<p><strong>10.1 Результаты технического собеседования</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Блок</strong></td>
+<td><strong>Результат</strong></td>
+<td><strong>Уровень</strong></td>
+</tr>
+<tr>
+<td>Linux</td>
+<td>10/15 (67%)</td>
+<td>Middle-</td>
+</tr>
+<tr>
+<td>Сети</td>
+<td>12/15 (80%)</td>
+<td>Middle</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>2/15 (13%)</td>
+<td>Junior-</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>7/15 (47%)</td>
+<td>Junior+</td>
+</tr>
+<tr>
+<td>Ansible/Prometheus</td>
+<td>0/15 (0%)</td>
+<td>Новичок</td>
+</tr>
+<tr>
+<td>Итого</td>
+<td>31/75 (41%)</td>
+<td>Junior DevOps</td>
+</tr>
+</tbody>
+</table>
+<p><strong>10.2 Дорожная карта (24 недели)</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Модуль</strong></td>
+<td><strong>Недели</strong></td>
+<td><strong>Статус</strong></td>
+<td><strong>Ключевые темы</strong></td>
+</tr>
+<tr>
+<td>Linux базово</td>
+<td>1-2</td>
+<td>✅ Готово</td>
+<td>Файловая система, SSH, systemd, firewall</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>3-4</td>
+<td>✅ Готово</td>
+<td>Ветки, merge, конфликты, GitHub</td>
+</tr>
+<tr>
+<td>Bash scripting</td>
+<td>5-6</td>
+<td>▶ Текущий</td>
+<td>Переменные, циклы, функции, sed/awk</td>
+</tr>
+<tr>
+<td>Docker углублённо</td>
+<td>7-9</td>
+<td>○ След.</td>
+<td>Layer cache, multi-stage, volumes, networks</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>10-11</td>
+<td>○</td>
+<td>GitHub Actions, GitLab CI, pipelines</td>
+</tr>
+<tr>
+<td>Ansible</td>
+<td>12-14</td>
+<td>○</td>
+<td>Roles, Vault, Jinja2, Galaxy</td>
+</tr>
+<tr>
+<td>Prometheus+Grafana+Zabbix</td>
+<td>15-16</td>
+<td>○</td>
+<td>PromQL, alerts, dashboards</td>
+</tr>
+<tr>
+<td>Redis + RabbitMQ</td>
+<td>17-18</td>
+<td>○</td>
+<td>Кэш, очереди, HA</td>
+</tr>
+<tr>
+<td>Kubernetes</td>
+<td>19-22</td>
+<td>○</td>
+<td>Pods, Helm, HPA, Ingress</td>
+</tr>
+<tr>
+<td>Terraform</td>
+<td>23-24</td>
+<td>○</td>
+<td>IaC, providers, state</td>
+</tr>
+</tbody>
+</table>
+<p><strong>10.3 Приоритеты изучения</strong></p>
+<p>Три категории по уровню приоритета:</p>
+<p>🔴 Учить с нуля (критично для трудоустройства):</p>
+<ul>
+<li><p>Kubernetes — самая востребованная технология 2026</p></li>
+<li><p>Terraform — Infrastructure as Code</p></li>
+<li><p>CI/CD — GitHub Actions, GitLab CI</p></li>
+<li><p>PromQL и Alerting</p></li>
+<li><p>Ansible Vault и Jinja2 шаблоны</p></li>
+</ul>
+<p>🟡 Подтянуть (есть база):</p>
+<ul>
+<li><p>Docker — layer cache, multi-stage builds, networking</p></li>
+<li><p>Git — rebase, cherry-pick, bisect</p></li>
+<li><p>Linux — Bash scripting, hard links, namespaces</p></li>
+</ul>
+<p>🟢 Повторить (хорошая база):</p>
+<ul>
+<li><p>Сети — маски подсетей, DNS, TCP/UDP</p></li>
+<li><p>SSH — ключи, конфиги, туннели</p></li>
+<li><p>Firewall — firewalld, SELinux</p></li>
+</ul>
+<p><strong>Глава 11. Команды быстрого справочника</strong></p>
+<p><strong>11.1 Linux</strong></p>
+<blockquote>
+<p># Процессы</p>
+<p>ps aux | grep [n]ginx # найти процесс ([] исключает сам grep)</p>
+<p>kill -15 PID # вежливое завершение (SIGTERM)</p>
+<p>kill -9 PID # принудительное завершение (SIGKILL)</p>
+<p>lsof -i :8080 # что слушает на порту</p>
+<p>ss -tlnp | grep 8080 # то же, современный способ</p>
+<p># Файлы</p>
+<p>find / -name файл 2&gt;/dev/null # найти файл</p>
+<p>grep -r "слово" /папка # поиск в файлах</p>
+<p>tail -f /var/log/syslog # следить за логом</p>
+<p>du -sh папка # размер папки</p>
+<p>df -h # место на дисках</p>
+<p># Права доступа</p>
+<p>chmod 644 файл # владелец RW, остальные R</p>
+<p>chmod 755 папка # владелец RWX, остальные RX</p>
+<p>chown user:group файл</p>
+</blockquote>
+<p><strong>11.2 Systemd</strong></p>
+<blockquote>
+<p>systemctl status nginx # статус службы</p>
+<p>systemctl start/stop/restart # управление</p>
+<p>systemctl enable --now nginx # автозапуск И запустить</p>
+<p>journalctl -u nginx -f # логи в реальном времени</p>
+<p>journalctl -u nginx -n 50 # последние 50 строк</p>
+<p>journalctl -b # логи с последней загрузки</p>
+</blockquote>
+<p><strong>11.3 Docker</strong></p>
+<blockquote>
+<p>docker ps -a # все контейнеры</p>
+<p>docker logs -f контейнер # логи в реальном времени</p>
+<p>docker exec -it контейнер bash # зайти внутрь</p>
+<p>docker stats # потребление ресурсов</p>
+<p>docker compose up -d --build # пересобрать и запустить</p>
+<p>docker compose down -v # остановить с volumes</p>
+<p>docker image prune # удалить неиспользуемые образы</p>
+<p>docker system prune # очистить всё лишнее</p>
+</blockquote>
+<p><strong>11.4 Git — ежедневные команды</strong></p>
+<blockquote>
+<p>git pull # получить изменения</p>
+<p>git status -s # краткий статус</p>
+<p>git add -p файл # добавить по кускам</p>
+<p>git commit -m "тип: текст" # закоммитить</p>
+<p>git push # отправить</p>
+<p>git switch -c feature/xxx # новая ветка</p>
+<p>git merge feature/xxx --no-ff # слить ветку</p>
+<p>git log --oneline --graph --all # история с графом</p>
+<p>git stash / git stash pop # временно спрятать</p>
+<p>git revert HEAD # безопасная отмена</p>
+</blockquote>
+<p><strong>11.5 Ansible</strong></p>
+<blockquote>
+<p>ansible-playbook -i inventory.ini setup.yml --syntax-check</p>
+<p>ansible-playbook -i inventory.ini setup.yml --check --diff</p>
+<p>ansible-playbook -i inventory.ini setup.yml</p>
+<p>ansible-playbook -i inventory.ini setup.yml --tags docker</p>
+<p>ansible-playbook -i inventory.ini setup.yml --limit redos</p>
+</blockquote>
+<p><strong>11.6 SELinux</strong></p>
+<blockquote>
+<p>getenforce # Enforcing/Permissive/Disabled</p>
+<p>sudo setenforce 0 # временно Permissive</p>
+<p>sudo ausearch -m avc -ts recent # последние блокировки</p>
+<p>ls -Z файл # SELinux контекст файла</p>
+<p>sudo chcon -Rt svirt_sandbox_file_t . # разрешить Docker</p>
+<p>sudo semanage port -a -t ssh_port_t -p tcp 2222 # порт для SSH</p>
+</blockquote>
+<p>Kirill Neustroev · DevOps Journey 2026 · github.com/khimeran</p>
+</body>
+</html>

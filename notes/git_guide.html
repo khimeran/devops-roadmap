@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Git Guide</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Git Guide</h1>
+</header>
+<p><strong>Git — Полное руководство</strong></p>
+<p>От новичка до уверенного пользователя</p>
+<p><em>С реальными примерами, типичными ошибками и их
+исправлением</em></p>
+<p><strong>1. Что такое Git — объяснение для всех</strong></p>
+<p>Представьте что вы пишете книгу. Каждый день вносите изменения. Через
+месяц понимаете что три главы назад текст был лучше — но все черновики
+выброшены. Именно эту проблему решает Git.</p>
+<p>Git — система контроля версий. Она запоминает каждое изменение в
+вашем коде: кто изменил, когда, что именно и зачем. Вы можете вернуться
+к любой точке в истории проекта.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Без Git</strong></td>
+<td><strong>С Git</strong></td>
+</tr>
+<tr>
+<td>файл_v1.py</td>
+<td>commit: начало проекта</td>
+</tr>
+<tr>
+<td>файл_v2.py</td>
+<td>commit: добавил авторизацию</td>
+</tr>
+<tr>
+<td>файл_v2_final.py</td>
+<td>commit: исправил баг</td>
+</tr>
+<tr>
+<td>файл_ТОЧНО_ФИНАЛ.py</td>
+<td>commit: добавил API</td>
+</tr>
+<tr>
+<td>файл_ФИНАЛ_2_РЕАЛЬНО.py</td>
+<td>← можно вернуться к любому моменту</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 Git — это не просто резервная копия. Это полная история проекта с
+возможностью работать в команде над одним кодом одновременно.</p>
+</blockquote>
+<p><strong>1.1 Основные концепции</strong></p>
+<p><strong>Repository (Репозиторий)</strong></p>
+<p>Папка проекта которую отслеживает Git. Внутри есть скрытая папка .git
+где хранится вся история.</p>
+<blockquote>
+<p>ls -la ~/git-practice</p>
+<p><em># drwxr-xr-x .git ← вся история здесь</em></p>
+</blockquote>
+<p><strong>Commit (Коммит)</strong></p>
+<p>Снимок состояния проекта в определённый момент. Каждый коммит имеет
+уникальный ID (хэш), автора, дату и сообщение.</p>
+<blockquote>
+<p>commit a3f4b2c</p>
+<p>Author: Kirill &lt;kirill@example.com&gt;</p>
+<p>Date: Thu May 8 10:00:00 2026</p>
+<p>Message: feat: добавил nginx конфигурацию</p>
+</blockquote>
+<p><strong>Branch (Ветка)</strong></p>
+<p>Параллельная линия разработки. Как альтернативная реальность —
+вносите изменения не затрагивая основной код.</p>
+<blockquote>
+<p>main ──●──●──●──────────────●</p>
+<p>└──●──●──●──┘</p>
+<p>feature/auth</p>
+</blockquote>
+<p><strong>Staging Area (Индекс)</strong></p>
+<p>Промежуточная зона перед коммитом. Вы выбираете какие именно
+изменения включить в следующий коммит.</p>
+<blockquote>
+<p>Рабочая папка → Staging Area → Repository</p>
+<p>(изменили) (git add) (git commit)</p>
+</blockquote>
+<p><strong>Remote (Удалённый репозиторий)</strong></p>
+<p>Копия репозитория на сервере (GitHub, GitLab). Используется для
+резервного копирования и командной работы.</p>
+<p><strong>2. Установка и первоначальная настройка</strong></p>
+<p><strong>2.1 Установка Git</strong></p>
+<blockquote>
+<p># Fedora / РЕД ОС</p>
+<p>sudo dnf install -y git</p>
+<p># Ubuntu / Debian</p>
+<p>sudo apt install -y git</p>
+<p># Проверить версию</p>
+<p>git --version</p>
+<p><em># git version 2.47.0</em></p>
+</blockquote>
+<p><strong>2.2 Обязательная настройка после установки</strong></p>
+<p>Это первое что нужно сделать на любой новой машине. Git требует знать
+кто делает коммиты.</p>
+<blockquote>
+<p># Установить имя — будет отображаться в коммитах</p>
+<p>git config --global user.name "Kirill"</p>
+<p># Установить email</p>
+<p>git config --global user.email "kirill@example.com"</p>
+<p># Установить ветку по умолчанию main вместо устаревшего master</p>
+<p>git config --global init.defaultBranch main</p>
+<p># Установить редактор для сообщений коммитов</p>
+<p>git config --global core.editor vim</p>
+<p># Проверить все настройки</p>
+<p>git config --global --list</p>
+<p><strong>⚠️ Реальная ошибка из практики: при первом коммите Git выдал
+ошибку 'Author identity unknown'. Причина — не были настроены user.name
+и user.email. Всегда настраивайте их сразу после установки
+Git!</strong></p>
+<p>❌ git commit без настройки user.name и user.email → ошибка 'Please
+tell me who you are'</p>
+<p>✅ Выполните git config --global user.name и user.email перед первым
+коммитом</p>
+</blockquote>
+<p><strong>2.3 Глобальный .gitignore</strong></p>
+<p>Файл который защищает секреты во ВСЕХ ваших репозиториях
+автоматически. Настроить один раз — работает везде.</p>
+<blockquote>
+<p># Создать глобальный .gitignore</p>
+<p>nano ~/.gitignore_global</p>
+</blockquote>
+<p>Содержимое файла:</p>
+<blockquote>
+<p>.env</p>
+<p>.env.*</p>
+<p>!.env.example</p>
+<p>*.pem</p>
+<p>*.key</p>
+<p>id_rsa</p>
+<p>id_ed25519</p>
+<p>*.log</p>
+<p>__pycache__/</p>
+<p>*.pyc</p>
+<p>venv/</p>
+<p>.venv/</p>
+<p>.idea/</p>
+<p>.vscode/</p>
+<p>*.swp</p>
+<p>.DS_Store</p>
+<p># Подключить глобальный .gitignore</p>
+<p>git config --global core.excludesfile ~/.gitignore_global</p>
+<p># Проверить что подключён</p>
+<p>git config --global --list | grep excludes</p>
+<p><em># core.excludesfile=/home/kirill/.gitignore_global</em></p>
+</blockquote>
+<p><strong>3. Создание репозитория</strong></p>
+<p><strong>3.1 Новый репозиторий</strong></p>
+<blockquote>
+<p># Создать папку и инициализировать репозиторий</p>
+<p>mkdir ~/my-project</p>
+<p>cd ~/my-project</p>
+<p>git init</p>
+<p><em># Инициализирован пустой репозиторий Git в
+/home/kirill/my-project/.git/</em></p>
+<p><strong>⚠️ Реальная ошибка из практики: при git init создалась ветка
+'master' вместо 'main'. Исправление: git branch -m master main. Чтобы
+этого не происходило — настройте git config --global init.defaultBranch
+main заранее.</strong></p>
+<p>❌ Ветка называется master — устаревший стандарт</p>
+<p>✅ git branch -m master main — переименовать ветку</p>
+</blockquote>
+<p><strong>3.2 Клонирование существующего репозитория</strong></p>
+<blockquote>
+<p># Клонировать репозиторий</p>
+<p>git clone https://github.com/user/repo.git</p>
+<p><em># Создаст папку repo/ со всем содержимым</em></p>
+<p># Клонировать в конкретную папку</p>
+<p>git clone https://github.com/user/repo.git my-folder</p>
+<p># Клонировать только последний коммит (быстрее для больших репо)</p>
+<p># --depth=1 — глубина истории: только 1 последний коммит</p>
+<p>git clone --depth=1 https://github.com/user/repo.git</p>
+<p># Клонировать конкретную ветку</p>
+<p># -b — указать ветку для клонирования</p>
+<p>git clone -b develop https://github.com/user/repo.git</p>
+</blockquote>
+<p><strong>4. Файл .gitignore</strong></p>
+<p>Файл .gitignore указывает Git какие файлы НЕ отслеживать. Это
+критично для безопасности — чтобы пароли и секреты не попали в
+репозиторий.</p>
+<p><strong>4.1 Как работает .gitignore</strong></p>
+<p>Все строки в .gitignore работают ОДНОВРЕМЕННО — это не конфиг где
+последнее значение побеждает. Файл игнорируется если подходит хотя бы
+под одно правило.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Паттерн</strong></td>
+<td><strong>Что игнорирует</strong></td>
+<td><strong>Пример</strong></td>
+</tr>
+<tr>
+<td>.env</td>
+<td>Только файл .env</td>
+<td>.env</td>
+</tr>
+<tr>
+<td>*.log</td>
+<td>Все файлы с расширением .log</td>
+<td>app.log, error.log</td>
+</tr>
+<tr>
+<td>.env.*</td>
+<td>Файлы начинающиеся с .env.</td>
+<td>.env.local, .env.prod</td>
+</tr>
+<tr>
+<td>logs/</td>
+<td>Папку logs целиком</td>
+<td>logs/app.log, logs/error.log</td>
+</tr>
+<tr>
+<td>!important.log</td>
+<td>НЕ игнорировать этот файл</td>
+<td>important.log будет отслеживаться</td>
+</tr>
+<tr>
+<td>**/temp</td>
+<td>Папку temp в любом месте</td>
+<td>src/temp/, dist/temp/</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>⚠️ Реальная ошибка из практики: написали *.env вместо .env.
+Разница: *.env игнорирует файлы ЗАКАНЧИВАЮЩИЕСЯ на .env (prod.env,
+dev.env), а .env игнорирует ИМЕННО файл .env. Для защиты файла .env
+используйте именно .env в .gitignore.</strong></p>
+</blockquote>
+<p><strong>4.2 Важное правило — .gitignore работает только с
+неотслеживаемыми файлами</strong></p>
+<p>Если файл уже был закоммичен — добавление его в .gitignore НЕ
+поможет. Git продолжит его отслеживать.</p>
+<blockquote>
+<p># Проверить отслеживается ли файл</p>
+<p>git ls-files | grep .env</p>
+<p># Убрать файл из отслеживания НО оставить на диске</p>
+<p># --cached — только из индекса Git, не с диска</p>
+<p>git rm --cached .env</p>
+<p># Для папки</p>
+<p># -r — рекурсивно</p>
+<p>git rm --cached -r папка/</p>
+<p># После этого закоммитить</p>
+<p>git commit -m "chore: убрал .env из отслеживания"</p>
+<p><strong>⚠️ Даже после git rm --cached файл остаётся в ИСТОРИИ старых
+коммитов! Если файл содержал реальные секреты — их нужно считать
+скомпрометированными и немедленно сменить.</strong></p>
+</blockquote>
+<p><strong>4.3 Правильная структура .gitignore для Python
+проекта</strong></p>
+<blockquote>
+<p># Секреты — никогда не коммитим</p>
+<p>.env</p>
+<p>.env.*</p>
+<p><em># НО шаблон без секретов можно</em></p>
+<p>!.env.example</p>
+<p># Python</p>
+<p>__pycache__/</p>
+<p>*.pyc</p>
+<p>*.pyo</p>
+<p>venv/</p>
+<p>.venv/</p>
+<p># Логи</p>
+<p>*.log</p>
+<p>logs/</p>
+<p># IDE</p>
+<p>.idea/</p>
+<p>.vscode/</p>
+<p>💡 Золотое правило: .gitignore должен быть ПЕРВЫМ коммитом в любом
+проекте. Создайте его до того как добавлять остальные файлы.</p>
+</blockquote>
+<p><strong>4.4 Проверка что файл игнорируется</strong></p>
+<blockquote>
+<p># Проверить почему файл игнорируется</p>
+<p># -v — verbose, показать какое правило сработало</p>
+<p>git check-ignore -v .env</p>
+<p><em># .gitignore:3:.env .env</em></p>
+<p><em># Файл: строка 3 в .gitignore, правило: .env</em></p>
+</blockquote>
+<p><strong>5. Основные команды работы с файлами</strong></p>
+<p><strong>5.1 git status — состояние репозитория</strong></p>
+<p>Самая часто используемая команда. Показывает что изменилось, что
+добавлено в staging, что не отслеживается.</p>
+<blockquote>
+<p>git status</p>
+<p># Короткий вывод</p>
+<p># -s — short, компактный формат</p>
+<p>git status -s</p>
+<p><em># M app.py — изменён и добавлен в staging</em></p>
+<p><em># MM config.py — изменён в staging И после этого ещё раз</em></p>
+<p><em># ?? new.py — новый файл не отслеживается</em></p>
+<p><em># A added.py — новый файл добавлен в staging</em></p>
+</blockquote>
+<p><strong>5.2 git add — добавление в staging</strong></p>
+<blockquote>
+<p># Добавить конкретный файл</p>
+<p>git add app.py</p>
+<p># Добавить несколько файлов</p>
+<p>git add app.py config.py utils.py</p>
+<p># Добавить все изменения в текущей папке</p>
+<p>git add .</p>
+<p># Добавить все файлы с расширением .py</p>
+<p>git add *.py</p>
+<p># Добавить всю папку</p>
+<p>git add src/</p>
+<p># Интерактивное добавление по кускам — ВАЖНАЯ команда!</p>
+<p># -p — patch, показывает каждый кусок изменений</p>
+<p>git add -p app.py</p>
+</blockquote>
+<p><strong>Подробно о git add -p</strong></p>
+<p>Позволяет добавлять изменения не весь файл целиком а по кускам.
+Незаменимо когда в одном файле несколько несвязанных изменений.</p>
+<p>Интерфейс показывает каждый кусок и спрашивает:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Клавиша</strong></td>
+<td><strong>Действие</strong></td>
+</tr>
+<tr>
+<td>y</td>
+<td>yes — добавить этот кусок в staging</td>
+</tr>
+<tr>
+<td>n</td>
+<td>no — пропустить этот кусок</td>
+</tr>
+<tr>
+<td>s</td>
+<td>split — разбить кусок на меньшие части</td>
+</tr>
+<tr>
+<td>e</td>
+<td>edit — отредактировать кусок вручную</td>
+</tr>
+<tr>
+<td>q</td>
+<td>quit — выйти, остальные куски не трогать</td>
+</tr>
+<tr>
+<td>a</td>
+<td>all — добавить этот и все следующие куски</td>
+</tr>
+<tr>
+<td>d</td>
+<td>don't — пропустить этот и все следующие</td>
+</tr>
+<tr>
+<td>?</td>
+<td>help — показать все команды</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 git add -p — признак профессионала. Позволяет делать атомарные
+коммиты: один коммит = одно логическое изменение. Работодатели это
+ценят.</p>
+</blockquote>
+<p><strong>5.3 git commit — создание коммита</strong></p>
+<blockquote>
+<p># Создать коммит с сообщением</p>
+<p># -m — message, сообщение коммита</p>
+<p>git commit -m "feat: добавил авторизацию"</p>
+<p># Добавить все изменённые файлы и закоммитить</p>
+<p># -a — all modified files, -m — message</p>
+<p>git commit -am "fix: исправил баг в авторизации"</p>
+<p><em># ВНИМАНИЕ: -a добавляет только уже ОТСЛЕЖИВАЕМЫЕ файлы</em></p>
+<p><em># Новые файлы нужно сначала добавить через git add</em></p>
+<p># Изменить последний коммит (если ещё не отправили на сервер)</p>
+<p># --amend — изменить последний коммит</p>
+<p>git commit --amend -m "Новое сообщение"</p>
+<p># Добавить забытый файл в последний коммит</p>
+<p>git add забытый_файл.py</p>
+<p># --no-edit — не менять сообщение коммита</p>
+<p>git commit --amend --no-edit</p>
+<p><strong>⚠️ Реальная ошибка из практики: попытка сделать git commit
+без предварительного git add. Git выдал 'индекс пуст'. Порядок всегда
+такой: изменить файл → git add → git commit.</strong></p>
+<p>❌ git commit без git add → ошибка 'nothing to commit' или 'индекс
+пуст'</p>
+<p>✅ Всегда: изменить файл → git add файл → git commit -m
+'сообщение'</p>
+</blockquote>
+<p><strong>5.4 Правила написания сообщений коммитов</strong></p>
+<p>Хорошие сообщения коммитов — это профессионализм. Работодатели
+смотрят на историю коммитов на собеседовании.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Плохо ❌</strong></td>
+<td><strong>Хорошо ✅</strong></td>
+</tr>
+<tr>
+<td>fix</td>
+<td>fix: исправил утечку памяти в обработчике запросов</td>
+</tr>
+<tr>
+<td>asdf</td>
+<td>feat: добавил авторизацию через JWT токены</td>
+</tr>
+<tr>
+<td>изменения</td>
+<td>docs: обновил README с инструкцией по Docker</td>
+</tr>
+<tr>
+<td>работает наконец</td>
+<td>chore: обновил зависимости до актуальных версий</td>
+</tr>
+<tr>
+<td>WTF</td>
+<td>refactor: вынес логику авторизации в отдельный модуль</td>
+</tr>
+</tbody>
+</table>
+<p>Стандарт Conventional Commits — формат: тип: краткое описание</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Тип</strong></td>
+<td><strong>Когда использовать</strong></td>
+<td><strong>Пример</strong></td>
+</tr>
+<tr>
+<td>feat</td>
+<td>Новая функциональность</td>
+<td>feat: добавил поиск по пользователям</td>
+</tr>
+<tr>
+<td>fix</td>
+<td>Исправление бага</td>
+<td>fix: исправил падение при пустом запросе</td>
+</tr>
+<tr>
+<td>docs</td>
+<td>Документация</td>
+<td>docs: добавил примеры в README</td>
+</tr>
+<tr>
+<td>chore</td>
+<td>Обслуживание</td>
+<td>chore: обновил зависимости</td>
+</tr>
+<tr>
+<td>refactor</td>
+<td>Рефакторинг</td>
+<td>refactor: упростил функцию авторизации</td>
+</tr>
+<tr>
+<td>test</td>
+<td>Тесты</td>
+<td>test: добавил тесты для API</td>
+</tr>
+<tr>
+<td>ci</td>
+<td>CI/CD</td>
+<td>ci: добавил GitHub Actions</td>
+</tr>
+<tr>
+<td>style</td>
+<td>Форматирование</td>
+<td>style: исправил отступы</td>
+</tr>
+</tbody>
+</table>
+<p><strong>6. Просмотр истории и изменений</strong></p>
+<p><strong>6.1 git log — история коммитов</strong></p>
+<blockquote>
+<p># Полная история</p>
+<p>git log</p>
+<p># Компактная история — каждый коммит в одну строку</p>
+<p># --oneline — краткий формат</p>
+<p>git log --oneline</p>
+<p><em># 93730bf chore: Добавил .gitignore</em></p>
+<p><em># 5f1e318 feat: Добавил первый скрипт</em></p>
+<p><em># 80a0a90 docs: добавил README</em></p>
+<p># История с графом веток</p>
+<p># --graph — показать ASCII граф веток</p>
+<p># --all — показать все ветки</p>
+<p>git log --oneline --graph --all</p>
+<p># Последние N коммитов</p>
+<p># -5 — показать последние 5</p>
+<p>git log -5</p>
+<p># История конкретного файла</p>
+<p>git log --oneline app.py</p>
+<p># Что изменилось в каждом коммите</p>
+<p># -p — patch, показать diff каждого коммита</p>
+<p>git log -p -3</p>
+<p># Поиск по сообщению коммита</p>
+<p># --grep — фильтр по тексту в сообщении</p>
+<p>git log --grep="авторизация"</p>
+<p># История за период</p>
+<p># --since и --until — временной диапазон</p>
+<p>git log --since="2 weeks ago"</p>
+<p>git log --since="2026-01-01" --until="2026-05-01"</p>
+<p># История конкретного автора</p>
+<p># --author — фильтр по автору</p>
+<p>git log --author="Kirill"</p>
+</blockquote>
+<p><strong>6.2 git diff — просмотр изменений</strong></p>
+<blockquote>
+<p># Что изменилось но ещё не добавлено в staging</p>
+<p>git diff</p>
+<p># Что добавлено в staging (будет в следующем коммите)</p>
+<p># --staged — показать изменения в staging area</p>
+<p>git diff --staged</p>
+<p># Разница между двумя коммитами</p>
+<p>git diff abc123 def456</p>
+<p># Разница между ветками</p>
+<p>git diff main feature/auth</p>
+<p># Только имена изменённых файлов</p>
+<p># --name-only — только имена без содержимого</p>
+<p>git diff --name-only</p>
+</blockquote>
+<p><strong>7. Ветки — Branch</strong></p>
+<p>Ветки — одна из главных возможностей Git. Позволяют разрабатывать
+новые функции не затрагивая основной код.</p>
+<p><strong>7.1 Управление ветками</strong></p>
+<blockquote>
+<p># Показать все локальные ветки</p>
+<p>git branch</p>
+<p><em># * main ← звёздочка = текущая ветка</em></p>
+<p><em># feature/auth</em></p>
+<p># Показать все ветки включая удалённые</p>
+<p># -a — all, все ветки</p>
+<p>git branch -a</p>
+<p># Создать новую ветку</p>
+<p>git branch feature/auth</p>
+<p># Переключиться на ветку (современный способ)</p>
+<p>git switch feature/auth</p>
+<p># Создать И сразу переключиться</p>
+<p># -c — create</p>
+<p>git switch -c feature/auth</p>
+<p># Старый способ (тоже работает)</p>
+<p># -b — branch, создать и переключиться</p>
+<p>git checkout -b feature/auth</p>
+<p># Переименовать ветку</p>
+<p># -m — move/rename</p>
+<p>git branch -m старое-имя новое-имя</p>
+<p># Удалить ветку (только если смержена)</p>
+<p># -d — delete</p>
+<p>git branch -d feature/auth</p>
+<p># Принудительно удалить ветку</p>
+<p># -D — force delete</p>
+<p>git branch -D feature/auth</p>
+</blockquote>
+<p><strong>7.2 Слияние веток — git merge</strong></p>
+<blockquote>
+<p># Переключиться в ветку куда сливаем</p>
+<p>git switch main</p>
+<p># Слить ветку feature/auth в текущую</p>
+<p>git merge feature/auth</p>
+<p># Слить с созданием коммита слияния (рекомендуется)</p>
+<p># --no-ff — no fast-forward, всегда создавать коммит слияния</p>
+<p>git merge feature/auth --no-ff -m "merge: добавил авторизацию"</p>
+<p># Отменить слияние если возник конфликт</p>
+<p># --abort — отменить и вернуться к состоянию до merge</p>
+<p>git merge --abort</p>
+</blockquote>
+<p><strong>7.3 Конфликты слияния</strong></p>
+<p>Конфликт возникает когда две ветки изменили одну и ту же строку в
+файле. Git не знает какую версию оставить и просит вас решить.</p>
+<p>Как выглядит конфликт в файле:</p>
+<blockquote>
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
+<p>Версия из текущей ветки (main)</p>
+<p>=======</p>
+<p>Версия из сливаемой ветки (feature/auth)</p>
+<p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/auth</p>
+</blockquote>
+<p>Как решить конфликт:</p>
+<ol type="1">
+<li><p>Откройте файл с конфликтом в редакторе</p></li>
+<li><p>Удалите маркеры &lt;&lt;&lt;&lt;&lt;&lt;, ======,
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></li>
+<li><p>Оставьте правильную версию (или объедините обе)</p></li>
+<li><p>Сохраните файл</p></li>
+<li><p>git add конфликтный_файл</p></li>
+<li><p>git commit -m "merge: решил конфликт"</p></li>
+</ol>
+<blockquote>
+<p># Посмотреть файлы с конфликтами</p>
+<p>git status</p>
+<p><em># both modified: app.py</em></p>
+</blockquote>
+<p><strong>8. Отмена изменений</strong></p>
+<p>Одна из самых важных тем — уметь отменять изменения. Разные команды
+для разных ситуаций.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Ситуация</strong></td>
+<td><strong>Команда</strong></td>
+<td><strong>Что делает</strong></td>
+</tr>
+<tr>
+<td>Отменить изменения в файле (до git add)</td>
+<td>git restore файл</td>
+<td>Возвращает файл к последнему коммиту</td>
+</tr>
+<tr>
+<td>Убрать файл из staging</td>
+<td>git restore --staged файл</td>
+<td>Файл остаётся изменённым но убирается из индекса</td>
+</tr>
+<tr>
+<td>Отменить последний коммит (сохранить изменения)</td>
+<td>git reset HEAD~1</td>
+<td>Коммит удаляется, изменения остаются</td>
+</tr>
+<tr>
+<td>Отменить последний коммит (удалить изменения)</td>
+<td>git reset --hard HEAD~1</td>
+<td>Коммит И изменения удаляются НАВСЕГДА</td>
+</tr>
+<tr>
+<td>Безопасная отмена (для командной работы)</td>
+<td>git revert HEAD</td>
+<td>Создаёт новый коммит отменяющий изменения</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p># Отменить изменения в конкретном файле</p>
+<p>git restore app.py</p>
+<p># Отменить ВСЕ незакоммиченные изменения</p>
+<p>git restore .</p>
+<p># Убрать файл из staging</p>
+<p># --staged — убрать из индекса</p>
+<p>git restore --staged app.py</p>
+<p># Отменить последний коммит сохранив изменения</p>
+<p># HEAD~1 — один коммит назад от HEAD</p>
+<p>git reset HEAD~1</p>
+<p># Отменить последний коммит УДАЛИВ изменения</p>
+<p># --hard — жёсткий сброс, изменения теряются</p>
+<p>git reset --hard HEAD~1</p>
+<p># Безопасная отмена — создаёт новый коммит</p>
+<p># Подходит когда уже отправили на сервер</p>
+<p>git revert HEAD</p>
+<p><strong>⚠️ git reset --hard необратим! Изменения удаляются навсегда.
+Используйте только если уверены. Для командной работы используйте git
+revert — он безопаснее.</strong></p>
+</blockquote>
+<p><strong>9. Stash — временное сохранение</strong></p>
+<p>Stash (тайник) — временное хранилище для незакоммиченных изменений.
+Полезно когда нужно срочно переключиться на другую ветку не делая
+коммит.</p>
+<blockquote>
+<p># Сохранить изменения в stash</p>
+<p>git stash</p>
+<p><em># Saved working directory and index state WIP on main</em></p>
+<p># Сохранить с описанием</p>
+<p># save — сохранить с именем</p>
+<p>git stash save "работа над авторизацией"</p>
+<p># Посмотреть список сохранений</p>
+<p>git stash list</p>
+<p><em># stash@{0}: WIP on main: работа над авторизацией</em></p>
+<p><em># stash@{1}: WIP on feature: другие изменения</em></p>
+<p># Восстановить последнее сохранение и удалить из stash</p>
+<p># pop — восстановить и удалить</p>
+<p>git stash pop</p>
+<p># Восстановить без удаления из stash</p>
+<p># apply — восстановить но оставить в stash</p>
+<p>git stash apply</p>
+<p># Восстановить конкретное сохранение</p>
+<p>git stash pop stash@{1}</p>
+<p># Удалить все сохранения</p>
+<p>git stash clear</p>
+<p>💡 Типичный сценарий: работаете над функцией, пришёл срочный
+баг-фикс. git stash → переключились на main → исправили баг →
+закоммитили → вернулись на ветку → git stash pop.</p>
+</blockquote>
+<p><strong>10. Работа с удалённым репозиторием</strong></p>
+<p><strong>10.1 Настройка remote</strong></p>
+<blockquote>
+<p># Показать удалённые репозитории</p>
+<p># -v — verbose, показать URL</p>
+<p>git remote -v</p>
+<p><em># origin https://github.com/user/repo.git (fetch)</em></p>
+<p><em># origin https://github.com/user/repo.git (push)</em></p>
+<p># Добавить удалённый репозиторий</p>
+<p># origin — стандартное имя основного репозитория</p>
+<p>git remote add origin https://github.com/user/repo.git</p>
+<p># Изменить URL удалённого репозитория</p>
+<p># set-url — изменить URL</p>
+<p>git remote set-url origin https://github.com/user/new-repo.git</p>
+<p># Удалить удалённый репозиторий</p>
+<p>git remote remove origin</p>
+</blockquote>
+<p><strong>10.2 Получение изменений</strong></p>
+<blockquote>
+<p># Скачать изменения НЕ применяя их</p>
+<p>git fetch origin</p>
+<p><em># Изменения скачаны в origin/main но не влиты в main</em></p>
+<p># Скачать И применить изменения</p>
+<p># = git fetch + git merge</p>
+<p>git pull origin main</p>
+<p># Скачать с перебазированием (чище история)</p>
+<p># --rebase — вместо merge использовать rebase</p>
+<p>git pull --rebase origin main</p>
+</blockquote>
+<p><strong>10.3 Отправка изменений</strong></p>
+<blockquote>
+<p># Отправить изменения</p>
+<p>git push origin main</p>
+<p># Отправить новую ветку и установить upstream</p>
+<p># -u — upstream, связать локальную ветку с удалённой</p>
+<p>git push -u origin feature/auth</p>
+<p><em># После -u можно просто писать git push</em></p>
+<p># Отправить все ветки</p>
+<p>git push --all origin</p>
+<p># Отправить теги</p>
+<p>git push --tags</p>
+<p># Принудительная отправка (ОСТОРОЖНО!)</p>
+<p># --force — перезаписать историю на сервере</p>
+<p>git push --force origin main</p>
+<p><strong>⚠️ git push --force перезаписывает историю на сервере. В
+командной работе это может удалить коммиты других людей! Используйте
+только для своих веток и только если точно знаете что
+делаете.</strong></p>
+</blockquote>
+<p><strong>11. Теги — Tags</strong></p>
+<p>Теги используются для маркировки важных точек в истории — обычно
+версий релизов.</p>
+<blockquote>
+<p># Создать лёгкий тег</p>
+<p>git tag v1.0.0</p>
+<p># Создать аннотированный тег с описанием</p>
+<p># -a — annotated, -m — message</p>
+<p>git tag -a v1.0.0 -m "Первый стабильный релиз"</p>
+<p># Показать все теги</p>
+<p>git tag</p>
+<p># Отправить теги на сервер</p>
+<p>git push origin --tags</p>
+<p># Удалить тег</p>
+<p>git tag -d v1.0.0</p>
+</blockquote>
+<p><strong>12. GitHub vs GitLab</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Параметр</strong></td>
+<td><strong>GitHub</strong></td>
+<td><strong>GitLab</strong></td>
+</tr>
+<tr>
+<td>Владелец</td>
+<td>Microsoft</td>
+<td>GitLab Inc</td>
+</tr>
+<tr>
+<td>Публичные репо</td>
+<td>Бесплатно</td>
+<td>Бесплатно</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>GitHub Actions</td>
+<td>GitLab CI (мощнее)</td>
+</tr>
+<tr>
+<td>Self-hosted</td>
+<td>Нет (бесплатно)</td>
+<td>Да (бесплатно)</td>
+</tr>
+<tr>
+<td>Популярность</td>
+<td>Больше open source</td>
+<td>Популярен в корпорациях</td>
+</tr>
+<tr>
+<td>Pull Request / MR</td>
+<td>Pull Request</td>
+<td>Merge Request</td>
+</tr>
+<tr>
+<td>В России</td>
+<td>Доступен</td>
+<td>Доступен</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 В российских компаниях часто используют GitLab self-hosted — свой
+сервер GitLab внутри компании. Знание обоих инструментов — конкурентное
+преимущество на собеседовании.</p>
+</blockquote>
+<p><strong>13. Типичные ошибки и их исправление</strong></p>
+<p><strong>Ошибка 1 — Коммит без настройки пользователя</strong></p>
+<blockquote>
+<p>❌ fatal: unable to auto-detect email address</p>
+<p>✅ git config --global user.name "Имя"</p>
+<p>✅ git config --global user.email "email@example.com"</p>
+</blockquote>
+<p><strong>Ошибка 2 — Ветка master вместо main</strong></p>
+<blockquote>
+<p>❌ Создалась ветка master — устаревший стандарт</p>
+<p>✅ git branch -m master main — переименовать</p>
+<p>✅ git config --global init.defaultBranch main — исправить для
+будущих репо</p>
+</blockquote>
+<p><strong>Ошибка 3 — Опечатка в названии файла</strong></p>
+<blockquote>
+<p>❌ Создали READMI.md вместо README.md</p>
+<p>✅ git mv READMI.md README.md — переименовать через Git</p>
+<p>✅ git commit -m "docs: переименовал README"</p>
+</blockquote>
+<p><strong>Ошибка 4 — Забыли git add перед commit</strong></p>
+<blockquote>
+<p>❌ nothing to commit / индекс пуст</p>
+<p>✅ git add файл — сначала добавить в staging</p>
+<p>✅ git commit -m "сообщение" — потом коммитить</p>
+</blockquote>
+<p><strong>Ошибка 5 — Закоммитили секрет</strong></p>
+<blockquote>
+<p>❌ Пароль или API ключ попал в коммит</p>
+<p>✅ Немедленно отозвать скомпрометированный ключ/пароль!</p>
+<p>✅ git rm --cached .env</p>
+<p>✅ git commit -m "chore: убрал .env"</p>
+<p>✅ Добавить .env в .gitignore</p>
+</blockquote>
+<p><strong>Ошибка 6 — gitignore вместо .gitignore</strong></p>
+<blockquote>
+<p>❌ Создали файл gitignore без точки в начале — Git его не видит</p>
+<p>✅ mv gitignore .gitignore — переименовать добавив точку</p>
+<p>✅ Точка в начале имени делает файл скрытым в Linux</p>
+</blockquote>
+<p><strong>Ошибка 7 — Неправильный паттерн в .gitignore</strong></p>
+<blockquote>
+<p>❌ *.env не защищает файл .env (только файлы вида prod.env)</p>
+<p>✅ Используйте .env для защиты именно файла .env</p>
+<p>✅ Используйте .env.* для файлов вида .env.local, .env.prod</p>
+</blockquote>
+<p><strong>14. Шпаргалка — ежедневные команды</strong></p>
+<p><strong>Начало работы</strong></p>
+<blockquote>
+<p>git pull # получить последние изменения</p>
+<p>git status # что изменилось</p>
+</blockquote>
+<p><strong>Работа с кодом</strong></p>
+<blockquote>
+<p>git add . # добавить всё</p>
+<p>git add -p файл # добавить по кускам</p>
+<p>git commit -m "тип: текст" # закоммитить</p>
+<p>git push # отправить</p>
+</blockquote>
+<p><strong>Ветки</strong></p>
+<blockquote>
+<p>git switch -c feature/xxx # новая ветка</p>
+<p>git switch main # вернуться в main</p>
+<p>git merge feature/xxx --no-ff # слить ветку</p>
+<p>git branch -d feature/xxx # удалить ветку</p>
+</blockquote>
+<p><strong>Когда что-то пошло не так</strong></p>
+<blockquote>
+<p>git log --oneline --graph # посмотреть историю</p>
+<p>git diff # что изменилось</p>
+<p>git restore . # отменить все изменения</p>
+<p>git stash # спрятать изменения</p>
+<p>git reset HEAD~1 # отменить последний коммит</p>
+</blockquote>
+<p><strong>Диагностика</strong></p>
+<blockquote>
+<p>git status -s # краткий статус</p>
+<p>git log --oneline -10 # последние 10 коммитов</p>
+<p>git check-ignore -v .env # почему файл игнорируется</p>
+<p>git ls-files # все отслеживаемые файлы</p>
+<p>git remote -v # удалённые репозитории</p>
+</blockquote>
+<p>Git — Полное руководство | Версия 1.0 | 2026</p>
+</body>
+</html>

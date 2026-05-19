@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Deployment Guide</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Deployment Guide</h1>
+</header>
+<p><strong>Развёртывание приложения на локальном хосте</strong></p>
+<p>Руководство DevOps инженера</p>
+<p>Fedora 44 | Docker | FastAPI | Prometheus | Grafana</p>
+<p><strong>1. Обзор проекта</strong></p>
+<p>В данном руководстве описан полный процесс развёртывания Python
+FastAPI приложения на локальном хосте под управлением Fedora 44 с
+использованием Docker. Документ содержит подробное описание каждой
+команды, оператора и параметра, а также описание проблем с которыми мы
+столкнулись и способы их решения.</p>
+<p><strong>1.1 Стек технологий</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Компонент</strong></td>
+<td><strong>Версия</strong></td>
+<td><strong>Назначение</strong></td>
+</tr>
+<tr>
+<td>Fedora</td>
+<td>44</td>
+<td>Хостовая операционная система</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>29.4.1</td>
+<td>Контейнеризация приложений</td>
+</tr>
+<tr>
+<td>FastAPI (Python)</td>
+<td>3.11</td>
+<td>Веб-фреймворк приложения</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>-</td>
+<td>База данных приложения</td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>latest</td>
+<td>Сбор и хранение метрик</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>latest</td>
+<td>Визуализация метрик</td>
+</tr>
+<tr>
+<td>Blackbox Exporter</td>
+<td>latest</td>
+<td>Мониторинг доступности</td>
+</tr>
+<tr>
+<td>Uvicorn</td>
+<td>-</td>
+<td>ASGI сервер для FastAPI</td>
+</tr>
+<tr>
+<td>Alembic</td>
+<td>-</td>
+<td>Миграции базы данных</td>
+</tr>
+</tbody>
+</table>
+<p><strong>1.2 Архитектура развёртывания</strong></p>
+<p>Финальная архитектура состоит из следующих компонентов:</p>
+<blockquote>
+<p>Клиент (браузер/телефон)</p>
+<p>↓ HTTP</p>
+<p>Fedora 44 (192.168.0.108)</p>
+<p>├── study-app (порт 8000) — приложение</p>
+<p>├── Prometheus (порт 9090) — метрики</p>
+<p>├── Grafana (порт 3001) — дашборды</p>
+<p>└── Blackbox (порт 9115) — проверки</p>
+</blockquote>
+<p><strong>2. Подготовка — клонирование репозитория</strong></p>
+<p>Первый шаг при работе с чужим приложением — получить исходный код. Мы
+использовали Git для клонирования репозитория с GitHub.</p>
+<p><strong>2.1 Команды</strong></p>
+<blockquote>
+<p>cd ~</p>
+<p>git clone https://github.com/iboiarkin96/etr_study_api.git</p>
+<p>cd etr_study_api</p>
+<p>ls -la</p>
+</blockquote>
+<p><strong>2.2 Разбор команд</strong></p>
+<p>cd ~ — переход в домашнюю директорию пользователя. Символ ~ является
+сокращением для /home/имя_пользователя. Это удобное место для хранения
+проектов.</p>
+<p>git clone URL — скачивает репозиторий со всеми файлами, историей
+коммитов и ветками. Создаёт папку с именем репозитория.</p>
+<p>ls -la — показывает список файлов с подробной информацией:</p>
+<ul>
+<li><p>-l — длинный формат (права, владелец, размер, дата)</p></li>
+<li><p>-a — показывать скрытые файлы (начинающиеся с точки)</p></li>
+</ul>
+<p><strong>2.3 Что изучить в первую очередь в незнакомом
+репозитории</strong></p>
+<p>При получении незнакомого приложения всегда смотрите в следующем
+порядке:</p>
+<ol type="1">
+<li><p>README.md — главный документ проекта. Там описано как запускать,
+какие зависимости нужны</p></li>
+<li><p>Dockerfile — инструкция по сборке образа. Показывает базовый
+образ, зависимости, порт</p></li>
+<li><p>docker-compose.yml — какие сервисы нужны (БД, кэш,
+очереди)</p></li>
+<li><p>requirements.txt / package.json / go.mod — зависимости
+приложения</p></li>
+<li><p>env/example или .env.example — переменные окружения которые нужно
+настроить</p></li>
+<li><p>scripts/ — вспомогательные скрипты запуска и настройки</p></li>
+</ol>
+<p><strong>3. Настройка переменных окружения</strong></p>
+<p>Переменные окружения — это настройки приложения которые передаются
+извне, без изменения кода. Это стандартная практика для конфигурирования
+приложений в разных средах (dev, qa, prod).</p>
+<p><strong>3.1 Создание .env файла</strong></p>
+<blockquote>
+<p>cp env/example .env</p>
+</blockquote>
+<p>cp — команда копирования файлов. Мы копируем шаблон env/example в
+файл .env который будет использоваться приложением.</p>
+<blockquote>
+<p><strong>⚠️ Файл .env содержит секреты (пароли, ключи API). Никогда не
+добавляйте его в Git! Всегда проверяйте что .env есть в
+.gitignore.</strong></p>
+</blockquote>
+<p><strong>3.2 Ключевые переменные проекта</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Переменная</strong></td>
+<td><strong>Значение</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>APP_HOST</td>
+<td>0.0.0.0</td>
+<td>Слушать на всех интерфейсах (не только localhost)</td>
+</tr>
+<tr>
+<td>APP_PORT</td>
+<td>8000</td>
+<td>Порт приложения</td>
+</tr>
+<tr>
+<td>APP_ENV</td>
+<td>dev</td>
+<td>Окружение: dev, qa, prod</td>
+</tr>
+<tr>
+<td>SQLITE_DB_PATH</td>
+<td>/data/study_app.db</td>
+<td>Путь к файлу базы данных</td>
+</tr>
+<tr>
+<td>LOG_LEVEL</td>
+<td>INFO</td>
+<td>Уровень логирования</td>
+</tr>
+<tr>
+<td>METRICS_ENABLED</td>
+<td>true</td>
+<td>Включить метрики Prometheus</td>
+</tr>
+<tr>
+<td>GRAFANA_ADMIN_USER</td>
+<td>admin</td>
+<td>Логин Grafana</td>
+</tr>
+<tr>
+<td>GRAFANA_ADMIN_PASSWORD</td>
+<td>admin</td>
+<td>Пароль Grafana (сменить в продакшне!)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>⚠️ APP_HOST=127.0.0.1 означает что приложение доступно только
+с самого сервера. Для доступа из сети нужно 0.0.0.0.</strong></p>
+</blockquote>
+<p><strong>4. Сборка Docker образа</strong></p>
+<p>Docker образ — это упакованное приложение со всеми зависимостями.
+Образ неизменяем — из него создаются контейнеры.</p>
+<p><strong>4.1 Команда сборки</strong></p>
+<blockquote>
+<p>docker build -t study-app-api:local .</p>
+</blockquote>
+<p><strong>4.2 Разбор параметров</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Параметр</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>docker build</td>
+<td>Команда сборки образа</td>
+</tr>
+<tr>
+<td>-t study-app-api:local</td>
+<td>-t означает tag (метка). Формат: имя:версия. local — наша локальная
+версия</td>
+</tr>
+<tr>
+<td>.</td>
+<td>Контекст сборки — текущая директория. Docker ищет Dockerfile
+здесь</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4.3 Разбор Dockerfile приложения</strong></p>
+<blockquote>
+<p>FROM python:3.11-slim-bookworm</p>
+</blockquote>
+<p>Базовый образ. slim — облегчённая версия без лишних пакетов (~150 МБ
+вместо ~900 МБ). bookworm — кодовое имя Debian 12.</p>
+<blockquote>
+<p>ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+PIP_NO_CACHE_DIR=1</p>
+</blockquote>
+<p>Устанавливает переменные окружения для оптимизации Python в
+контейнере:</p>
+<ul>
+<li><p>PYTHONUNBUFFERED=1 — вывод сразу в терминал без буферизации.
+Важно для логов в Docker</p></li>
+<li><p>PYTHONDONTWRITEBYTECODE=1 — не создавать .pyc файлы. Не нужны в
+контейнере, уменьшают образ</p></li>
+<li><p>PIP_NO_CACHE_DIR=1 — не кэшировать пакеты pip. Уменьшает размер
+образа</p></li>
+</ul>
+<blockquote>
+<p>RUN useradd --create-home --uid 1000 appuser</p>
+</blockquote>
+<p>Создаёт непривилегированного пользователя. Никогда не запускайте
+приложения от root в контейнере — это угроза безопасности.</p>
+<blockquote>
+<p>COPY requirements.txt .</p>
+<p>RUN pip install --upgrade pip &amp;&amp; pip install -r
+requirements.txt</p>
+</blockquote>
+<p>Сначала копируем только requirements.txt и устанавливаем зависимости.
+Хитрость: Docker кэширует слои. Если код изменился но requirements.txt
+нет — этот слой берётся из кэша и сборка намного быстрее.</p>
+<blockquote>
+<p>EXPOSE 8000</p>
+</blockquote>
+<p>Документирует какой порт использует приложение. НЕ открывает порт
+реально — это только метаданные для разработчиков.</p>
+<p><strong>4.4 Концепция слоёв Docker</strong></p>
+<p>Образ состоит из слоёв — каждая команда в Dockerfile создаёт новый
+слой. Слои кэшируются. Правило: сначала то что меняется редко
+(зависимости), потом то что меняется часто (код).</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Слой</strong></td>
+<td><strong>Команда</strong></td>
+<td><strong>Кэшируется?</strong></td>
+</tr>
+<tr>
+<td>1</td>
+<td>FROM python:3.11-slim</td>
+<td>Да, пока не меняем базовый образ</td>
+</tr>
+<tr>
+<td>2</td>
+<td>RUN useradd appuser</td>
+<td>Да</td>
+</tr>
+<tr>
+<td>3</td>
+<td>COPY requirements.txt</td>
+<td>Да, пока файл не изменился</td>
+</tr>
+<tr>
+<td>4</td>
+<td>RUN pip install</td>
+<td>Да, пока requirements.txt не изменился</td>
+</tr>
+<tr>
+<td>5</td>
+<td>COPY app/</td>
+<td>Нет, код меняется часто</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4.5 Свой образ vs чужой — когда что использовать</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Тип</strong></td>
+<td><strong>Когда использовать</strong></td>
+<td><strong>Риски</strong></td>
+</tr>
+<tr>
+<td>Собственный (docker build)</td>
+<td>Своё приложение, кастомизация</td>
+<td>Нужно следить за обновлениями</td>
+</tr>
+<tr>
+<td>Официальный (docker pull)</td>
+<td>nginx, postgres, redis, prometheus</td>
+<td>Минимальные — проверено сообществом</td>
+</tr>
+<tr>
+<td>Сторонний неизвестный</td>
+<td>Никогда в продакшне</td>
+<td>Вредоносный код, уязвимости</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>⚠️ Всегда используйте конкретные версии образов:
+postgres:16.2-alpine, а не postgres:latest. В продакшне latest может
+неожиданно обновиться и сломать приложение.</strong></p>
+</blockquote>
+<p><strong>5. Запуск приложения</strong></p>
+<p><strong>5.1 Команда запуска контейнера</strong></p>
+<blockquote>
+<p>docker run -d \</p>
+<p>--name study-app \</p>
+<p>-p 8000:8000 \</p>
+<p>--env-file .env \</p>
+<p>study-app-api:local</p>
+</blockquote>
+<p><strong>5.2 Разбор параметров</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Параметр</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>docker run</td>
+<td>Создать и запустить контейнер из образа</td>
+</tr>
+<tr>
+<td>-d</td>
+<td>Detached mode — запустить в фоне. Без этого контейнер блокирует
+терминал</td>
+</tr>
+<tr>
+<td>--name study-app</td>
+<td>Дать контейнеру имя. Без имени Docker даёт случайное вроде
+silly_einstein</td>
+</tr>
+<tr>
+<td>-p 8000:8000</td>
+<td>Пробросить порт. Формат: порт_хоста:порт_контейнера</td>
+</tr>
+<tr>
+<td>--env-file .env</td>
+<td>Передать все переменные из файла .env в контейнер</td>
+</tr>
+<tr>
+<td>study-app-api:local</td>
+<td>Имя образа из которого создаём контейнер</td>
+</tr>
+</tbody>
+</table>
+<p><strong>5.3 Проверка работоспособности</strong></p>
+<blockquote>
+<p>curl http://localhost:8000/live</p>
+</blockquote>
+<p>Ожидаемый ответ: {"status":"alive","app_env":"dev"}</p>
+<blockquote>
+<p>curl http://localhost:8000/ready</p>
+</blockquote>
+<p>Ожидаемый ответ: {"status":"ready","checks":{"database":"ok"}}</p>
+<blockquote>
+<p>💡 Эндпоинты /live и /ready — стандарт для production приложений.
+/live проверяет что процесс жив, /ready что приложение готово принимать
+запросы (БД подключена и т.д.).</p>
+</blockquote>
+<p><strong>6. Запуск мониторинга</strong></p>
+<p>Стек мониторинга включает Prometheus (сбор метрик), Grafana
+(визуализация) и Blackbox Exporter (проверка доступности). Все три
+сервиса описаны в docker-compose.observability.yml.</p>
+<p><strong>6.1 Команда запуска</strong></p>
+<blockquote>
+<p>docker compose -f docker-compose.observability.yml up -d</p>
+</blockquote>
+<p><strong>6.2 Разбор параметров</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Параметр</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>docker compose</td>
+<td>Инструмент для управления несколькими контейнерами</td>
+</tr>
+<tr>
+<td>-f docker-compose.observability.yml</td>
+<td>-f (file) — указать конкретный файл. По умолчанию ищет
+docker-compose.yml</td>
+</tr>
+<tr>
+<td>up</td>
+<td>Создать и запустить все сервисы из файла</td>
+</tr>
+<tr>
+<td>-d</td>
+<td>Detached — запустить в фоне</td>
+</tr>
+</tbody>
+</table>
+<p><strong>6.3 Другие полезные команды Docker Compose</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>docker compose ps</td>
+<td>Статус всех сервисов</td>
+</tr>
+<tr>
+<td>docker compose logs -f</td>
+<td>Следить за логами всех сервисов</td>
+</tr>
+<tr>
+<td>docker compose logs -f prometheus</td>
+<td>Логи конкретного сервиса</td>
+</tr>
+<tr>
+<td>docker compose down</td>
+<td>Остановить и удалить контейнеры</td>
+</tr>
+<tr>
+<td>docker compose down -v</td>
+<td>Удалить вместе с volumes (данными!)</td>
+</tr>
+<tr>
+<td>docker compose restart prometheus</td>
+<td>Перезапустить конкретный сервис</td>
+</tr>
+<tr>
+<td>docker compose exec grafana bash</td>
+<td>Зайти внутрь контейнера</td>
+</tr>
+</tbody>
+</table>
+<p><strong>7. Проблемы и их решения</strong></p>
+<p>В процессе развёртывания мы столкнулись с рядом проблем характерных
+для Linux и Docker. Каждая проблема подробно описана ниже.</p>
+<p><strong>7.1 Проблема: Permission Denied на конфигурационных
+файлах</strong></p>
+<p><strong>Симптомы</strong></p>
+<blockquote>
+<p>err="open /etc/prometheus/prometheus.yml: permission denied"</p>
+</blockquote>
+<p>Prometheus и Blackbox Exporter падали с ошибкой доступа к файлам
+конфигурации которые мы монтировали через volumes.</p>
+<p><strong>Причина</strong></p>
+<p>Docker контейнеры запускаются от пользователя с другим UID (65534 —
+nobody для Prometheus). Файлы принадлежали root и не имели прав на
+чтение для других пользователей.</p>
+<p><strong>Диагностика</strong></p>
+<blockquote>
+<p>docker logs study-app-prometheus</p>
+<p>ls -la ops/prometheus/</p>
+</blockquote>
+<p>В логах ищите: permission denied, cannot open, access denied</p>
+<p><strong>Решение 1 — изменить права доступа</strong></p>
+<blockquote>
+<p>chmod -R 644 ops/prometheus/</p>
+<p>chmod -R 644 ops/grafana/</p>
+</blockquote>
+<p>chmod — изменить права доступа к файлам. -R — рекурсивно. 644 —
+владелец: чтение+запись, остальные: только чтение.</p>
+<p><strong>Решение 2 — изменить SELinux контекст (специфично для
+Fedora/RHEL)</strong></p>
+<blockquote>
+<p>sudo chcon -Rt svirt_sandbox_file_t ops/</p>
+</blockquote>
+<p>chcon — изменить SELinux контекст. -R — рекурсивно.
+svirt_sandbox_file_t — тип который разрешает Docker контейнерам читать
+файлы хоста.</p>
+<blockquote>
+<p><strong>⚠️ На Ubuntu/Debian SELinux обычно не установлен — там
+достаточно только chmod. На Fedora/RHEL/CentOS нужны оба
+шага.</strong></p>
+</blockquote>
+<p><strong>7.2 Проблема: host.docker.internal не работает на
+Linux</strong></p>
+<p><strong>Симптомы</strong></p>
+<p>Prometheus не мог достучаться до приложения через адрес
+host.docker.internal который прописан в конфиге.</p>
+<p><strong>Причина</strong></p>
+<p>host.docker.internal — специальный DNS адрес который Docker создаёт
+только на Mac и Windows для обращения к хост-машине из контейнера. На
+Linux этот адрес не создаётся автоматически.</p>
+<p><strong>Решение</strong></p>
+<p>Заменить host.docker.internal на реальный IP адрес хост-машины в
+файле ops/prometheus/prometheus.yml:</p>
+<blockquote>
+<p>targets: ["192.168.0.108:8000"]</p>
+</blockquote>
+<p>Узнать IP хост-машины: ip a | grep inet</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>ОС</strong></td>
+<td><strong>host.docker.internal</strong></td>
+<td><strong>Решение</strong></td>
+</tr>
+<tr>
+<td>macOS</td>
+<td>Работает</td>
+<td>Ничего не нужно</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>Работает</td>
+<td>Ничего не нужно</td>
+</tr>
+<tr>
+<td>Linux</td>
+<td>НЕ работает</td>
+<td>Использовать реальный IP или --add-host</td>
+</tr>
+<tr>
+<td>Linux (альтернатива)</td>
+<td>НЕ работает</td>
+<td>docker run --add-host=host.docker.internal:host-gateway</td>
+</tr>
+</tbody>
+</table>
+<p><strong>7.3 Проблема: приложение недоступно по внешнему
+IP</strong></p>
+<p><strong>Симптомы</strong></p>
+<p>Приложение работало через localhost но не было доступно по IP адресу
+192.168.0.108 из браузера Fedora. С телефона всё работало нормально.</p>
+<p><strong>Причина</strong></p>
+<p>Особенность маршрутизации на Linux — обращение к собственному
+внешнему IP с самого хоста проходит иначе чем с других устройств. Это
+нормальное поведение.</p>
+<p><strong>Диагностика</strong></p>
+<blockquote>
+<p>ss -tlnp | grep 8000</p>
+</blockquote>
+<p>Если видите 0.0.0.0:8000 — приложение слушает на всех интерфейсах и
+доступно снаружи.</p>
+<blockquote>
+<p>sudo firewall-cmd --list-all</p>
+</blockquote>
+<p>Проверить открытые порты в firewall.</p>
+<p><strong>Решение</strong></p>
+<blockquote>
+<p>sudo firewall-cmd --zone=FedoraWorkstation --permanent
+--add-port=8000/tcp</p>
+<p>sudo firewall-cmd --reload</p>
+<p>💡 Если приложение доступно с телефона но не с самого хоста по
+внешнему IP — это нормально. Используйте localhost для локальной
+проверки.</p>
+</blockquote>
+<p><strong>7.4 Проблема: SSH на нестандартном порту блокируется
+SELinux</strong></p>
+<p><strong>Симптомы</strong></p>
+<blockquote>
+<p>status=255/EXCEPTION</p>
+</blockquote>
+<p>SSH демон не мог запуститься после смены порта с 22 на 2222.</p>
+<p><strong>Причина</strong></p>
+<p>SELinux знает какие порты разрешены для каждого сервиса. Порт 2222 не
+был в списке разрешённых для SSH.</p>
+<p><strong>Решение</strong></p>
+<blockquote>
+<p>sudo semanage port -a -t ssh_port_t -p tcp 2222</p>
+</blockquote>
+<p>semanage — управление SELinux политиками. port -a — добавить порт. -t
+ssh_port_t — тип порта для SSH. -p tcp 2222 — протокол и номер
+порта.</p>
+<p><strong>8. SELinux — подробное руководство</strong></p>
+<p>SELinux (Security-Enhanced Linux) — система принудительного контроля
+доступа. Присутствует на Fedora, RHEL, CentOS. На Ubuntu/Debian
+используется AppArmor — похожая но другая система.</p>
+<p><strong>8.1 Основные команды диагностики SELinux</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>getenforce</td>
+<td>Показать режим SELinux: Enforcing/Permissive/Disabled</td>
+</tr>
+<tr>
+<td>sudo setenforce 0</td>
+<td>Временно перевести в Permissive (только логирует, не блокирует)</td>
+</tr>
+<tr>
+<td>sudo setenforce 1</td>
+<td>Вернуть в Enforcing (блокирует нарушения)</td>
+</tr>
+<tr>
+<td>ls -Z файл</td>
+<td>Показать SELinux контекст файла</td>
+</tr>
+<tr>
+<td>ps auxZ | grep nginx</td>
+<td>Показать SELinux контекст процесса</td>
+</tr>
+<tr>
+<td>sudo ausearch -m avc -ts recent</td>
+<td>Показать последние блокировки SELinux</td>
+</tr>
+<tr>
+<td>sudo ausearch -m avc -ts today</td>
+<td>Блокировки за сегодня</td>
+</tr>
+</tbody>
+</table>
+<p><strong>8.2 Типичные проблемы SELinux с Docker</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Симптом</strong></td>
+<td><strong>Причина</strong></td>
+<td><strong>Решение</strong></td>
+</tr>
+<tr>
+<td>permission denied на mounted volume</td>
+<td>Неверный SELinux контекст файла</td>
+<td>chcon -Rt svirt_sandbox_file_t папка/</td>
+</tr>
+<tr>
+<td>SSH не запускается на новом порту</td>
+<td>Порт не разрешён для ssh_port_t</td>
+<td>semanage port -a -t ssh_port_t -p tcp ПОРТ</td>
+</tr>
+<tr>
+<td>Nginx не может читать файлы</td>
+<td>Контекст файлов не httpd_content_t</td>
+<td>chcon -Rt httpd_content_t /var/www/</td>
+</tr>
+<tr>
+<td>Приложение не может писать в папку</td>
+<td>Нет прав на запись по SELinux</td>
+<td>chcon -t container_file_t папка/</td>
+</tr>
+</tbody>
+</table>
+<p><strong>8.3 SELinux на разных дистрибутивах</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Дистрибутив</strong></td>
+<td><strong>Система MAC</strong></td>
+<td><strong>По умолчанию</strong></td>
+</tr>
+<tr>
+<td>Fedora</td>
+<td>SELinux</td>
+<td>Enforcing</td>
+</tr>
+<tr>
+<td>RHEL/CentOS/Rocky</td>
+<td>SELinux</td>
+<td>Enforcing</td>
+</tr>
+<tr>
+<td>РЕД ОС</td>
+<td>SELinux</td>
+<td>Enforcing</td>
+</tr>
+<tr>
+<td>Ubuntu/Debian</td>
+<td>AppArmor</td>
+<td>Enabled</td>
+</tr>
+<tr>
+<td>Arch Linux</td>
+<td>Нет</td>
+<td>Отсутствует</td>
+</tr>
+</tbody>
+</table>
+<p><strong>9. Firewall — подробное руководство</strong></p>
+<p><strong>9.1 firewalld — основные команды</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Команда</strong></td>
+<td><strong>Описание</strong></td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --list-all</td>
+<td>Показать все правила активной зоны</td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --permanent --add-port=8000/tcp</td>
+<td>Открыть порт навсегда</td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --permanent --remove-port=8000/tcp</td>
+<td>Закрыть порт навсегда</td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --reload</td>
+<td>Применить изменения</td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --get-active-zones</td>
+<td>Показать активные зоны</td>
+</tr>
+<tr>
+<td>sudo firewall-cmd --permanent --add-service=http</td>
+<td>Открыть сервис (http=80)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>⚠️ Параметр --permanent сохраняет правило навсегда. Без него
+правило действует только до перезагрузки. После --permanent всегда
+выполняйте --reload.</strong></p>
+</blockquote>
+<p><strong>9.2 Firewall на разных дистрибутивах</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Дистрибутив</strong></td>
+<td><strong>Firewall</strong></td>
+<td><strong>Команды</strong></td>
+</tr>
+<tr>
+<td>Fedora/RHEL/РЕД ОС</td>
+<td>firewalld</td>
+<td>firewall-cmd</td>
+</tr>
+<tr>
+<td>Ubuntu (новые)</td>
+<td>ufw</td>
+<td>ufw allow 8000/tcp</td>
+</tr>
+<tr>
+<td>Ubuntu (старые)</td>
+<td>iptables</td>
+<td>iptables -A INPUT -p tcp --dport 8000 -j ACCEPT</td>
+</tr>
+<tr>
+<td>Debian</td>
+<td>nftables/iptables</td>
+<td>nft add rule inet filter input tcp dport 8000 accept</td>
+</tr>
+</tbody>
+</table>
+<p><strong>10. Диагностика — на что смотреть в логах</strong></p>
+<p><strong>10.1 Общая стратегия диагностики</strong></p>
+<ol start="7" type="1">
+<li><p>Проверьте статус контейнера: docker ps — Running или
+Restarting?</p></li>
+<li><p>Смотрите логи: docker logs имя_контейнера — последние строки
+покажут ошибку</p></li>
+<li><p>Проверьте порты: ss -tlnp | grep PORT — слушает ли
+приложение?</p></li>
+<li><p>Проверьте сеть: curl http://localhost:PORT — отвечает ли
+приложение?</p></li>
+<li><p>Проверьте firewall: firewall-cmd --list-all — открыт ли
+порт?</p></li>
+<li><p>Проверьте SELinux: ausearch -m avc -ts recent — есть ли
+блокировки?</p></li>
+</ol>
+<p><strong>10.2 Ключевые слова для поиска в логах</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Ключевое слово</strong></td>
+<td><strong>Что означает</strong></td>
+<td><strong>Что делать</strong></td>
+</tr>
+<tr>
+<td>permission denied</td>
+<td>Нет прав доступа к файлу или порту</td>
+<td>chmod, chcon, или semanage</td>
+</tr>
+<tr>
+<td>connection refused</td>
+<td>Порт закрыт или приложение не слушает</td>
+<td>Проверить запущен ли сервис, открыт ли порт</td>
+</tr>
+<tr>
+<td>no such file or directory</td>
+<td>Файл или директория не существует</td>
+<td>Проверить пути, создать директорию</td>
+</tr>
+<tr>
+<td>address already in use</td>
+<td>Порт занят другим процессом</td>
+<td>ss -tlnp | grep PORT, убить процесс</td>
+</tr>
+<tr>
+<td>OOMKilled</td>
+<td>Контейнер убит из-за нехватки памяти</td>
+<td>Увеличить лимит памяти в docker-compose</td>
+</tr>
+<tr>
+<td>exit code 1</td>
+<td>Приложение завершилось с ошибкой</td>
+<td>Смотреть логи подробнее</td>
+</tr>
+<tr>
+<td>exit code 137</td>
+<td>Контейнер убит сигналом SIGKILL (OOM)</td>
+<td>Увеличить память</td>
+</tr>
+<tr>
+<td>cannot connect to database</td>
+<td>Нет подключения к БД</td>
+<td>Проверить DATABASE_URL, запущена ли БД</td>
+</tr>
+</tbody>
+</table>
+<p><strong>10.3 Полезные команды диагностики</strong></p>
+<blockquote>
+<p># Статус всех контейнеров</p>
+<p>docker ps -a</p>
+<p># Последние 50 строк логов</p>
+<p>docker logs --tail 50 имя_контейнера</p>
+<p># Следить за логами в реальном времени</p>
+<p>docker logs -f имя_контейнера</p>
+<p># Зайти внутрь контейнера для диагностики</p>
+<p>docker exec -it имя_контейнера bash</p>
+<p># Посмотреть потребление ресурсов</p>
+<p>docker stats</p>
+<p># Детальная информация о контейнере</p>
+<p>docker inspect имя_контейнера</p>
+</blockquote>
+<p><strong>11. Алгоритм работы с незнакомым приложением</strong></p>
+<p>Когда вам дают незнакомое приложение и просят развернуть — следуйте
+этому алгоритму:</p>
+<p><strong>Шаг 1 — Разведка (15-30 минут)</strong></p>
+<ul>
+<li><p>Прочитайте README.md полностью</p></li>
+<li><p>Найдите Dockerfile — есть ли он? Если нет — нужно
+написать</p></li>
+<li><p>Найдите docker-compose.yml — какие сервисы нужны?</p></li>
+<li><p>Найдите .env.example или env/example — какие переменные
+нужны?</p></li>
+<li><p>Посмотрите requirements.txt — определите стек технологий</p></li>
+<li><p>Найдите скрипты запуска в scripts/ или Makefile</p></li>
+</ul>
+<p><strong>Шаг 2 — Вопросы к разработчику</strong></p>
+<ul>
+<li><p>На каком порту слушает приложение?</p></li>
+<li><p>Какая база данных нужна и какие учётные данные?</p></li>
+<li><p>Есть ли внешние зависимости (Redis, очереди, сторонние
+API)?</p></li>
+<li><p>Какие переменные окружения обязательны?</p></li>
+<li><p>Как запустить миграции БД?</p></li>
+<li><p>Как проверить что приложение работает (healthcheck
+endpoint)?</p></li>
+</ul>
+<p><strong>Шаг 3 — Локальный запуск без Docker</strong></p>
+<p>Сначала запустите приложение напрямую — это поможет понять как оно
+работает:</p>
+<blockquote>
+<p>python3 -m venv venv &amp;&amp; source venv/bin/activate</p>
+<p>pip install -r requirements.txt</p>
+<p>python3 app.py # или uvicorn app.main:app</p>
+</blockquote>
+<p><strong>Шаг 4 — Написание Dockerfile (если нет)</strong></p>
+<p>Шаблон Dockerfile для Python FastAPI приложения:</p>
+<blockquote>
+<p>FROM python:3.11-slim</p>
+<p>WORKDIR /app</p>
+<p>COPY requirements.txt .</p>
+<p>RUN pip install -r requirements.txt</p>
+<p>COPY . .</p>
+<p>EXPOSE 8000</p>
+<p>CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port",
+"8000"]</p>
+</blockquote>
+<p><strong>Шаг 5 — Написание docker-compose.yml</strong></p>
+<p>Минимальный docker-compose.yml для FastAPI + PostgreSQL:</p>
+<blockquote>
+<p>services:</p>
+<p>app:</p>
+<p>build: .</p>
+<p>ports:</p>
+<p>- "8000:8000"</p>
+<p>env_file: .env</p>
+<p>depends_on:</p>
+<p>- postgres</p>
+<p>postgres:</p>
+<p>image: postgres:16-alpine</p>
+<p>environment:</p>
+<p>POSTGRES_DB: myapp</p>
+<p>POSTGRES_USER: myapp</p>
+<p>POSTGRES_PASSWORD: secret</p>
+<p>volumes:</p>
+<p>- postgres_data:/var/lib/postgresql/data</p>
+<p>volumes:</p>
+<p>postgres_data:</p>
+</blockquote>
+<p><strong>Шаг 6 — Проверка и отладка</strong></p>
+<ul>
+<li><p>Запустите: docker compose up</p></li>
+<li><p>Смотрите логи: docker compose logs -f</p></li>
+<li><p>Проверьте healthcheck: curl http://localhost:8000/health</p></li>
+<li><p>Проверьте Swagger: http://localhost:8000/docs</p></li>
+</ul>
+<p><strong>На что обратить особое внимание</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Аспект</strong></td>
+<td><strong>Что проверить</strong></td>
+<td><strong>Потенциальные проблемы</strong></td>
+</tr>
+<tr>
+<td>База данных</td>
+<td>Подключение, миграции, данные</td>
+<td>Неверный URL, не запущена БД, не применены миграции</td>
+</tr>
+<tr>
+<td>Переменные окружения</td>
+<td>Все обязательные заданы</td>
+<td>Приложение падает без нужных переменных</td>
+</tr>
+<tr>
+<td>Порты</td>
+<td>Нет конфликтов с другими сервисами</td>
+<td>Port already in use</td>
+</tr>
+<tr>
+<td>Права доступа</td>
+<td>Файлы доступны из контейнера</td>
+<td>Permission denied, SELinux</td>
+</tr>
+<tr>
+<td>Сеть</td>
+<td>Контейнеры видят друг друга</td>
+<td>Имена сервисов в docker-compose = DNS имена</td>
+</tr>
+<tr>
+<td>Volumes</td>
+<td>Данные сохраняются между перезапусками</td>
+<td>Данные теряются без volumes</td>
+</tr>
+<tr>
+<td>Логи</td>
+<td>Приложение пишет логи</td>
+<td>Молчащее приложение сложнее отлаживать</td>
+</tr>
+</tbody>
+</table>
+<p><strong>12. Итоговая конфигурация</strong></p>
+<p><strong>12.1 Что было развёрнуто</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Сервис</strong></td>
+<td><strong>Порт</strong></td>
+<td><strong>URL</strong></td>
+<td><strong>Статус</strong></td>
+</tr>
+<tr>
+<td>FastAPI приложение</td>
+<td>8000</td>
+<td>http://192.168.0.108:8000/docs</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>9090</td>
+<td>http://192.168.0.108:9090</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td>3001</td>
+<td>http://192.168.0.108:3001</td>
+<td>✅ Работает</td>
+</tr>
+<tr>
+<td>Blackbox Exporter</td>
+<td>9115</td>
+<td>http://192.168.0.108:9115</td>
+<td>✅ Работает</td>
+</tr>
+</tbody>
+</table>
+<p><strong>12.2 Следующие шаги</strong></p>
+<ol start="13" type="1">
+<li><p>Написать единый docker-compose.yml объединяющий приложение и
+мониторинг</p></li>
+<li><p>Перенести на виртуальный сервер РЕД ОС</p></li>
+<li><p>Настроить Nginx как обратный прокси</p></li>
+<li><p>Перейти на PostgreSQL вместо SQLite</p></li>
+<li><p>Настроить SSL сертификат (HTTPS)</p></li>
+<li><p>Перенести на реальный VPS с доменом</p></li>
+</ol>
+<p>Документ подготовлен в процессе обучения DevOps практикам</p>
+</body>
+</html>

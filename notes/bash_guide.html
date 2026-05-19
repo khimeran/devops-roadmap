@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Bash Guide</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Bash Guide</h1>
+</header>
+<p><strong>Bash Scripting</strong></p>
+<p>Полный конспект DevOps инженера</p>
+<p><em>Команды · Функции · Переменные · Шаблоны · Ошибки и
+решения</em></p>
+<p><strong>1. Основы — с чего начинается любой скрипт</strong></p>
+<p><strong>1.1 Shebang — первая строка</strong></p>
+<p>Первая строка скрипта указывает какой интерпретатор использовать. Без
+неё скрипт выполняется текущей оболочкой что может привести к
+неожиданному поведению.</p>
+<blockquote>
+<p>#!/bin/bash # стандартный Bash</p>
+<p>#!/usr/bin/env bash # лучший вариант — ищет bash в PATH</p>
+<p>#!/bin/sh # POSIX sh — меньше возможностей но работает везде</p>
+<p>💡 #!/usr/bin/env bash предпочтительнее потому что не зависит от
+расположения bash в системе. На некоторых системах bash находится в
+/usr/local/bin/bash а не в /bin/bash.</p>
+</blockquote>
+<p><strong>1.2 Три защитных флага — всегда ставьте в начало</strong></p>
+<p>Без этих флагов скрипт продолжает работу даже при ошибках что может
+привести к катастрофическим последствиям.</p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p><em># set -e — выйти при любой ошибке (exit on error)</em></p>
+<p><em># set -u — ошибка при использовании необъявленной
+переменной</em></p>
+<p><em># set -o pipefail — ошибка если упала любая команда в
+pipeline</em></p>
+</blockquote>
+<p>Почему каждый флаг важен:</p>
+<blockquote>
+<p># Без set -e:</p>
+<p>rm -rf /важная/папка # ошибка — папка не существует</p>
+<p>echo 'продолжаем...' # выполнится! Потенциально опасно</p>
+<p># С set -e:</p>
+<p>rm -rf /важная/папка # ошибка — скрипт ОСТАНАВЛИВАЕТСЯ</p>
+<p>echo 'продолжаем...' # НЕ выполнится</p>
+<p># Без set -u:</p>
+<p>echo $UNDEFINED_VAR # выведет пустую строку — нет ошибки!</p>
+<p># С set -u:</p>
+<p>echo $UNDEFINED_VAR # ошибка: unbound variable</p>
+<p># Без set -o pipefail:</p>
+<p>cat несуществующий | grep text # cat упал, но grep вернул 0</p>
+<p>echo $? # 0 — скрипт думает что всё хорошо!</p>
+<p># С set -o pipefail:</p>
+<p>cat несуществующий | grep text # ошибка всего pipeline</p>
+<p>❌ Ошибка из практики: THRESHHOLD=80 объявили переменную, а
+обращались к $THRESHOLD (другое имя). Без set -u — молчаливая пустая
+строка. С set -u — сразу ошибка.</p>
+<p>✅ Всегда добавляйте set -euo pipefail — это спасёт от трудноуловимых
+багов</p>
+</blockquote>
+<p><strong>1.3 Права на выполнение</strong></p>
+<blockquote>
+<p># Сделать файл исполняемым</p>
+<p>chmod +x script.sh # добавить бит execute всем</p>
+<p>chmod 755 script.sh # rwxr-xr-x — стандарт для скриптов</p>
+<p>chmod 700 script.sh # rwx------ — только владелец</p>
+<p># Запуск скрипта</p>
+<p>./script.sh # из текущей папки</p>
+<p>bash script.sh # явно через bash (без chmod +x)</p>
+<p>/home/kirill/script.sh # абсолютный путь</p>
+</blockquote>
+<p><strong>1.4 Комментарии</strong></p>
+<blockquote>
+<p># Это однострочный комментарий</p>
+<p># Многострочный комментарий</p>
+<p># через несколько строк</p>
+<p># с символом #</p>
+<p>: '</p>
+<p>Это тоже многострочный комментарий</p>
+<p>через heredoc синтаксис</p>
+<p>'</p>
+</blockquote>
+<p><strong>2. Переменные — полное руководство</strong></p>
+<p><strong>2.1 Объявление и использование</strong></p>
+<blockquote>
+<p># Объявление — БЕЗ пробелов вокруг =</p>
+<p>имя='Kirill' # строка в одинарных кавычках</p>
+<p>фраза="Привет, $имя" # строка в двойных кавычках (подстановка)</p>
+<p>число=42 # число (в Bash всё строки!)</p>
+<p>пустая='' # пустая строка</p>
+<p># Использование — $ перед именем</p>
+<p>echo $имя # Kirill</p>
+<p>echo "$имя" # Kirill (в кавычках — безопаснее)</p>
+<p>echo ${имя} # Kirill (фигурные скобки — явные границы)</p>
+<p>❌ Ошибка: имя = 'Kirill' — пробелы вокруг = вызывают ошибку 'command
+not found'</p>
+<p>✅ имя='Kirill' — никаких пробелов вокруг знака равенства</p>
+</blockquote>
+<p><strong>2.2 Одинарные vs двойные кавычки</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Кавычки</strong></td>
+<td><strong>Подстановка переменных</strong></td>
+<td><strong>Спецсимволы</strong></td>
+<td><strong>Когда использовать</strong></td>
+</tr>
+<tr>
+<td>'одинарные'</td>
+<td>НЕТ — буквально</td>
+<td>НЕТ — буквально</td>
+<td>Когда нужен точный текст</td>
+</tr>
+<tr>
+<td>"двойные"</td>
+<td>ДА — $VAR заменяется</td>
+<td>ДА — \n, \t работают</td>
+<td>Когда нужны переменные</td>
+</tr>
+<tr>
+<td>без кавычек</td>
+<td>ДА</td>
+<td>ДА</td>
+<td>Избегайте — сплит по пробелам</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>name='World'</p>
+<p>echo 'Hello $name' # Hello $name — буквально</p>
+<p>echo "Hello $name" # Hello World — подстановка</p>
+</blockquote>
+<p><strong>2.3 Специальные переменные</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Переменная</strong></td>
+<td><strong>Значение</strong></td>
+<td><strong>Пример использования</strong></td>
+</tr>
+<tr>
+<td>$0</td>
+<td>Имя скрипта</td>
+<td>echo "Запущен: $0"</td>
+</tr>
+<tr>
+<td>$1, $2, $3</td>
+<td>Аргументы скрипта</td>
+<td>имя=$1; возраст=$2</td>
+</tr>
+<tr>
+<td>$@</td>
+<td>Все аргументы (раздельно)</td>
+<td>for arg in "$@"; do</td>
+</tr>
+<tr>
+<td>$*</td>
+<td>Все аргументы (строкой)</td>
+<td>echo "Аргументы: $*"</td>
+</tr>
+<tr>
+<td>$#</td>
+<td>Количество аргументов</td>
+<td>if [[ $# -eq 0 ]]; then</td>
+</tr>
+<tr>
+<td>$?</td>
+<td>Код возврата последней команды</td>
+<td>if [[ $? -ne 0 ]]; then</td>
+</tr>
+<tr>
+<td>$$</td>
+<td>PID текущего процесса</td>
+<td>echo "PID: $$"</td>
+</tr>
+<tr>
+<td>$!</td>
+<td>PID последнего фонового процесса</td>
+<td>wait $!</td>
+</tr>
+<tr>
+<td>$HOME</td>
+<td>Домашняя папка</td>
+<td>cd $HOME</td>
+</tr>
+<tr>
+<td>$USER</td>
+<td>Текущий пользователь</td>
+<td>echo "Привет, $USER"</td>
+</tr>
+<tr>
+<td>$PWD</td>
+<td>Текущая папка</td>
+<td>echo "Мы в: $PWD"</td>
+</tr>
+<tr>
+<td>$RANDOM</td>
+<td>Случайное число 0-32767</td>
+<td>echo $RANDOM</td>
+</tr>
+<tr>
+<td>$LINENO</td>
+<td>Номер текущей строки</td>
+<td>echo "Строка: $LINENO"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2.4 Подстановка команд</strong></p>
+<p>Выполняет команду и подставляет её вывод как значение переменной.</p>
+<blockquote>
+<p># Современный синтаксис — рекомендуется</p>
+<p>дата=$(date +"%Y-%m-%d")</p>
+<p>пользователь=$(whoami)</p>
+<p>кол_файлов=$(ls -1 | wc -l)</p>
+<p># Старый синтаксис — избегайте</p>
+<p>дата=`date +"%Y-%m-%d"` # backticks — нельзя вкладывать</p>
+<p># Вложенная подстановка — только с $()</p>
+<p>размер=$(du -sh $(pwd) | cut -f1)</p>
+</blockquote>
+<p><strong>2.5 Арифметика</strong></p>
+<blockquote>
+<p>a=10</p>
+<p>b=3</p>
+<p># Способ 1 — $(( )) — рекомендуется</p>
+<p>сумма=$((a + b)) # 13</p>
+<p>разность=$((a - b)) # 7</p>
+<p>произведение=$((a * b)) # 30</p>
+<p>частное=$((a / b)) # 3 (целочисленное!)</p>
+<p>остаток=$((a % b)) # 1</p>
+<p>степень=$((a ** 2)) # 100</p>
+<p># Инкремент и декремент</p>
+<p>((a++)) # a = a + 1</p>
+<p>((a--)) # a = a - 1</p>
+<p>((a += 5)) # a = a + 5</p>
+<p># Способ 2 — expr (устаревший)</p>
+<p>сумма=$(expr $a + $b)</p>
+<p># Дробные числа — только через bc</p>
+<p>результат=$(echo "scale=2; 10 / 3" | bc) # 3.33</p>
+</blockquote>
+<p><strong>2.6 Строковые операции</strong></p>
+<blockquote>
+<p>str='Hello World'</p>
+<p># Длина строки</p>
+<p>echo ${#str} # 11</p>
+<p># Срез строки ${var:начало:длина}</p>
+<p>echo ${str:0:5} # Hello</p>
+<p>echo ${str:6} # World (до конца)</p>
+<p>echo ${str: -5} # World (с конца)</p>
+<p># Замена ${var/старый/новый}</p>
+<p>echo ${str/World/Bash} # Hello Bash (первое вхождение)</p>
+<p>echo ${str//l/L} # HeLLo WorLd (все вхождения)</p>
+<p># Удаление префикса/суффикса</p>
+<p>файл='backup_2026.tar.gz'</p>
+<p>echo ${файл%.tar.gz} # backup_2026 (удалить суффикс)</p>
+<p>echo ${файл#backup_} # 2026.tar.gz (удалить префикс)</p>
+<p># Верхний/нижний регистр (Bash 4+)</p>
+<p>echo ${str^^} # HELLO WORLD</p>
+<p>echo ${str,,} # hello world</p>
+</blockquote>
+<p><strong>2.7 Значения по умолчанию</strong></p>
+<blockquote>
+<p># ${var:-default} — использовать default если var пустая или не
+задана</p>
+<p>имя=${1:-'Гость'}</p>
+<p>echo "Привет, $имя" # если $1 не передан — 'Гость'</p>
+<p># ${var:=default} — присвоить default если var пустая</p>
+<p>порт=${PORT:=8080}</p>
+<p># ${var:?сообщение} — ошибка если var пустая</p>
+<p>db_url=${DATABASE_URL:?'DATABASE_URL не задана!'}</p>
+<p># ${var:+значение} — использовать значение если var НЕ пустая</p>
+<p>debug=${DEBUG:+' --verbose'}</p>
+</blockquote>
+<p><strong>2.8 Массивы</strong></p>
+<blockquote>
+<p># Объявление массива</p>
+<p>фрукты=('яблоко' 'банан' 'вишня')</p>
+<p># Доступ к элементам</p>
+<p>echo ${фрукты[0]} # яблоко (индекс с 0)</p>
+<p>echo ${фрукты[1]} # банан</p>
+<p>echo ${фрукты[-1]} # вишня (последний)</p>
+<p># Все элементы</p>
+<p>echo ${фрукты[@]} # яблоко банан вишня</p>
+<p># Длина массива</p>
+<p>echo ${#фрукты[@]} # 3</p>
+<p># Добавить элемент</p>
+<p>фрукты+=('груша')</p>
+<p># Перебор массива</p>
+<p>for фрукт in "${фрукты[@]}"; do</p>
+<p>echo "Фрукт: $фрукт"</p>
+<p>done</p>
+</blockquote>
+<p><strong>3. Условия и сравнения</strong></p>
+<p><strong>3.1 Синтаксис if</strong></p>
+<blockquote>
+<p>if [[ условие ]]; then</p>
+<p># выполнить если истинно</p>
+<p>elif [[ другое_условие ]]; then</p>
+<p># выполнить если второе истинно</p>
+<p>else</p>
+<p># выполнить если ничего не совпало</p>
+<p>fi</p>
+<p><strong>⚠️ Пробелы внутри [[ ]] обязательны! [[$VAR -eq 5]] — ошибка.
+[[ $VAR -eq 5 ]] — правильно.</strong></p>
+</blockquote>
+<p><strong>3.2 [ ] vs [[ ]] vs (( ))</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Тип</strong></td>
+<td><strong>Назначение</strong></td>
+<td><strong>Особенности</strong></td>
+</tr>
+<tr>
+<td>[ ]</td>
+<td>POSIX тест — старый</td>
+<td>Ломается от пробелов в переменных. Нужны кавычки</td>
+</tr>
+<tr>
+<td>[[ ]]</td>
+<td>Bash тест — современный</td>
+<td>Безопасен. Поддерживает &amp;&amp; || =~ для regex</td>
+</tr>
+<tr>
+<td>(( ))</td>
+<td>Арифметическое условие</td>
+<td>Для сравнения чисел. Не нужен -eq -lt</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p># [ ] — старый способ, нужны кавычки</p>
+<p>[ "$var" = 'hello' ]</p>
+<p># [[ ]] — современный, безопаснее</p>
+<p>[[ $var == 'hello' ]]</p>
+<p>[[ $var =~ ^[0-9]+$ ]] # regex проверка</p>
+<p># (( )) — для чисел</p>
+<p>(( a &gt; 5 ))</p>
+<p>(( a &gt;= b &amp;&amp; c &lt; 10 ))</p>
+</blockquote>
+<p><strong>3.3 Операторы сравнения</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Числа</strong></td>
+<td><strong>Строки</strong></td>
+<td><strong>Файлы</strong></td>
+<td><strong>Значение</strong></td>
+</tr>
+<tr>
+<td>-eq</td>
+<td>==</td>
+<td>-f</td>
+<td>равно / равно / это файл</td>
+</tr>
+<tr>
+<td>-ne</td>
+<td>!=</td>
+<td>-d</td>
+<td>не равно / не равно / это директория</td>
+</tr>
+<tr>
+<td>-gt</td>
+<td>&gt;</td>
+<td>-e</td>
+<td>больше / больше / существует</td>
+</tr>
+<tr>
+<td>-lt</td>
+<td>&lt;</td>
+<td>-r</td>
+<td>меньше / меньше / доступен для чтения</td>
+</tr>
+<tr>
+<td>-ge</td>
+<td>&gt;=</td>
+<td>-w</td>
+<td>больше или равно / / доступен для записи</td>
+</tr>
+<tr>
+<td>-le</td>
+<td>&lt;=</td>
+<td>-x</td>
+<td>меньше или равно / / исполняемый</td>
+</tr>
+<tr>
+<td></td>
+<td>-z</td>
+<td>-s</td>
+<td>/ строка пустая / файл не пустой</td>
+</tr>
+<tr>
+<td></td>
+<td>-n</td>
+<td></td>
+<td>/ строка не пустая /</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3.4 Логические операторы</strong></p>
+<blockquote>
+<p># И (AND)</p>
+<p>[[ $a -gt 0 &amp;&amp; $b -gt 0 ]]</p>
+<p>[[ $a -gt 0 ]] &amp;&amp; [[ $b -gt 0 ]]</p>
+<p># ИЛИ (OR)</p>
+<p>[[ $a -gt 0 || $b -gt 0 ]]</p>
+<p># НЕ (NOT)</p>
+<p>[[ ! -f /etc/passwd ]]</p>
+<p>! command # если команда завершилась с ошибкой</p>
+</blockquote>
+<p><strong>3.5 Case — многозначное ветвление</strong></p>
+<blockquote>
+<p>case "$переменная" in</p>
+<p>'значение1')</p>
+<p>echo 'Первый случай'</p>
+<p>;; # обязательный разделитель</p>
+<p>'значение2'|'значение3') # несколько вариантов через |</p>
+<p>echo 'Второй или третий'</p>
+<p>;;</p>
+<p>start|START) # регистр важен</p>
+<p>echo 'Запуск'</p>
+<p>;;</p>
+<p>*) # * — любое другое значение</p>
+<p>echo 'Неизвестное значение'</p>
+<p>;;</p>
+<p>esac</p>
+</blockquote>
+<p><strong>4. Циклы</strong></p>
+<p><strong>4.1 For — перебор элементов</strong></p>
+<blockquote>
+<p># По списку значений</p>
+<p>for item in one two three; do</p>
+<p>echo "Элемент: $item"</p>
+<p>done</p>
+<p># По диапазону чисел</p>
+<p>for i in {1..10}; do</p>
+<p>echo "Число: $i"</p>
+<p>done</p>
+<p># Диапазон с шагом</p>
+<p>for i in {0..100..10}; do # 0 10 20 30...100</p>
+<p>echo $i</p>
+<p>done</p>
+<p># C-стиль (как в C/Java)</p>
+<p>for ((i=0; i&lt;10; i++)); do</p>
+<p>echo $i</p>
+<p>done</p>
+<p># По файлам</p>
+<p>for file in /var/log/*.log; do</p>
+<p>echo "Лог файл: $file"</p>
+<p>wc -l "$file"</p>
+<p>done</p>
+<p># По выводу команды</p>
+<p>for user in $(cut -d: -f1 /etc/passwd); do</p>
+<p>echo "Пользователь: $user"</p>
+<p>done</p>
+<p># По аргументам скрипта</p>
+<p>for arg in "$@"; do</p>
+<p>echo "Аргумент: $arg"</p>
+<p>done</p>
+</blockquote>
+<p><strong>4.2 While — пока условие истинно</strong></p>
+<blockquote>
+<p># Базовый while</p>
+<p>count=0</p>
+<p>while [[ $count -lt 5 ]]; do</p>
+<p>echo "Итерация: $count"</p>
+<p>((count++))</p>
+<p>done</p>
+<p># Чтение файла построчно</p>
+<p>while IFS= read -r line; do</p>
+<p>echo "Строка: $line"</p>
+<p>done &lt; /etc/hosts</p>
+<p><em># IFS= — не разбивать по пробелам</em></p>
+<p><em># -r — не интерпретировать backslash</em></p>
+<p># Чтение вывода команды построчно</p>
+<p>while IFS= read -r line; do</p>
+<p>echo "$line"</p>
+<p>done &lt; &lt;(df -h)</p>
+<p><em># &lt; &lt;() — process substitution</em></p>
+<p># Бесконечный цикл</p>
+<p>while true; do</p>
+<p>echo 'Жду...'</p>
+<p>sleep 5</p>
+<p>done</p>
+</blockquote>
+<p><strong>4.3 Until — пока условие ложно</strong></p>
+<blockquote>
+<p># Противоположность while</p>
+<p>count=0</p>
+<p>until [[ $count -ge 5 ]]; do</p>
+<p>echo $count</p>
+<p>((count++))</p>
+<p>done</p>
+</blockquote>
+<p><strong>4.4 Управление циклами</strong></p>
+<blockquote>
+<p>break # выйти из цикла</p>
+<p>continue # перейти к следующей итерации</p>
+<p># Пример с break</p>
+<p>for i in {1..100}; do</p>
+<p>if [[ $i -eq 10 ]]; then</p>
+<p>break # остановить на 10</p>
+<p>fi</p>
+<p>echo $i</p>
+<p>done</p>
+<p># Пример с continue</p>
+<p>for i in {1..10}; do</p>
+<p>if [[ $((i % 2)) -eq 0 ]]; then</p>
+<p>continue # пропустить чётные</p>
+<p>fi</p>
+<p>echo $i # только нечётные</p>
+<p>done</p>
+</blockquote>
+<p><strong>5. Функции — подробное руководство</strong></p>
+<p><strong>5.1 Объявление функций</strong></p>
+<p>В Bash функции объявляются двумя способами — оба равнозначны:</p>
+<blockquote>
+<p># Способ 1 — с ключевым словом function</p>
+<p>function имя_функции() {</p>
+<p># тело функции</p>
+<p>}</p>
+<p># Способ 2 — без ключевого слова (рекомендуется)</p>
+<p>имя_функции() {</p>
+<p># тело функции</p>
+<p>}</p>
+<p><strong>⚠️ Функцию нужно объявить ДО её вызова. В отличие от
+некоторых языков Bash не поднимает объявления функций.</strong></p>
+</blockquote>
+<p><strong>5.2 Аргументы функций</strong></p>
+<p>В сигнатуре функции НЕТ параметров — только пустые скобки. Аргументы
+доступны через позиционные переменные $1, $2, $3...</p>
+<blockquote>
+<p>greet() {</p>
+<p>local name=$1 # первый аргумент</p>
+<p>local age=$2 # второй аргумент</p>
+<p>echo "Привет, $name! Тебе $age лет."</p>
+<p>}</p>
+<p># Вызов — аргументы через пробел</p>
+<p>greet 'Kirill' 25</p>
+<p><em># Привет, Kirill! Тебе 25 лет.</em></p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Переменная</strong></td>
+<td><strong>Значение внутри функции</strong></td>
+</tr>
+<tr>
+<td>$0</td>
+<td>Имя скрипта (НЕ функции)</td>
+</tr>
+<tr>
+<td>$1</td>
+<td>Первый аргумент функции</td>
+</tr>
+<tr>
+<td>$2</td>
+<td>Второй аргумент функции</td>
+</tr>
+<tr>
+<td>$@</td>
+<td>Все аргументы как отдельные строки</td>
+</tr>
+<tr>
+<td>$*</td>
+<td>Все аргументы как одна строка</td>
+</tr>
+<tr>
+<td>$#</td>
+<td>Количество аргументов функции</td>
+</tr>
+</tbody>
+</table>
+<p><strong>5.3 Локальные переменные — local</strong></p>
+<p>Без local переменная становится глобальной и может перезаписать
+переменную с тем же именем в основном скрипте.</p>
+<blockquote>
+<p>name='Глобальный'</p>
+<p># БЕЗ local — опасно</p>
+<p>bad_function() {</p>
+<p>name='Локальный' # перезаписывает глобальную!</p>
+<p>}</p>
+<p># С local — безопасно</p>
+<p>good_function() {</p>
+<p>local name='Локальный' # видна только здесь</p>
+<p>}</p>
+<p>bad_function</p>
+<p>echo $name # Локальный — глобальная перезаписана!</p>
+<p>good_function</p>
+<p>echo $name # Глобальный — не тронута</p>
+<p>💡 Всегда используйте local для переменных внутри функций. Это
+предотвращает трудноуловимые баги когда две функции случайно используют
+одно имя переменной.</p>
+</blockquote>
+<p><strong>5.4 Возврат значений</strong></p>
+<p>В Bash функция может вернуть только числовой код (0-255). Для
+возврата строк используется echo + подстановка команды $().</p>
+<blockquote>
+<p># return — только числовой код</p>
+<p># 0 = успех, 1-255 = ошибка</p>
+<p>check_file() {</p>
+<p>local file=$1</p>
+<p>if [[ -f "$file" ]]; then</p>
+<p>return 0 # успех</p>
+<p>else</p>
+<p>return 1 # ошибка</p>
+<p>fi</p>
+<p>}</p>
+<p># Использование кода возврата</p>
+<p>if check_file '/etc/passwd'; then</p>
+<p>echo 'Файл существует'</p>
+<p>else</p>
+<p>echo 'Файл не найден'</p>
+<p>fi</p>
+<p># Возврат СТРОКИ — через echo + $()</p>
+<p>get_timestamp() {</p>
+<p>echo $(date +"%Y-%m-%d %H:%M:%S")</p>
+<p>}</p>
+<p># Захват возвращаемой строки</p>
+<p>timestamp=$(get_timestamp)</p>
+<p>echo "Время: $timestamp"</p>
+</blockquote>
+<p><strong>5.5 Функции vs Python — сравнение</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Аспект</strong></td>
+<td><strong>Python</strong></td>
+<td><strong>Bash</strong></td>
+</tr>
+<tr>
+<td>Сигнатура</td>
+<td>def func(a, b, c):</td>
+<td>func() { }</td>
+</tr>
+<tr>
+<td>Параметры</td>
+<td>Явно в скобках</td>
+<td>Всегда пустые скобки</td>
+</tr>
+<tr>
+<td>Доступ к аргументам</td>
+<td>По имени: a, b</td>
+<td>По позиции: $1, $2</td>
+</tr>
+<tr>
+<td>Именованный вызов</td>
+<td>func(name='Kirill')</td>
+<td>❌ Невозможно</td>
+</tr>
+<tr>
+<td>Локальные переменные</td>
+<td>По умолчанию</td>
+<td>Нужно писать local</td>
+</tr>
+<tr>
+<td>Возврат значения</td>
+<td>return любой тип</td>
+<td>return только 0-255</td>
+</tr>
+<tr>
+<td>Возврат строки</td>
+<td>return 'текст'</td>
+<td>echo 'текст' + $()</td>
+</tr>
+<tr>
+<td>Вложенные функции</td>
+<td>Поддерживаются</td>
+<td>Поддерживаются</td>
+</tr>
+</tbody>
+</table>
+<p><strong>5.6 Продвинутые техники функций</strong></p>
+<blockquote>
+<p># Функция с проверкой аргументов</p>
+<p>create_backup() {</p>
+<p># Проверить что аргументы переданы</p>
+<p>if [[ $# -lt 2 ]]; then</p>
+<p>echo "Использование: create_backup &lt;source&gt; &lt;dest&gt;"
+&gt;&amp;2</p>
+<p>return 1</p>
+<p>fi</p>
+<p>local source=$1</p>
+<p>local dest=$2</p>
+<p>local timestamp=$(date +"%Y%m%d_%H%M%S")</p>
+<p>tar -czf "${dest}/backup_${timestamp}.tar.gz" "$source"</p>
+<p>}</p>
+<p># Рекурсивная функция</p>
+<p>factorial() {</p>
+<p>local n=$1</p>
+<p>if [[ $n -le 1 ]]; then</p>
+<p>echo 1</p>
+<p>return</p>
+<p>fi</p>
+<p>local prev=$(factorial $((n - 1)))</p>
+<p>echo $((n * prev))</p>
+<p>}</p>
+<p>echo $(factorial 5) # 120</p>
+</blockquote>
+<p><strong>6. Ввод, вывод и перенаправление</strong></p>
+<p><strong>6.1 Стандартные потоки</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Поток</strong></td>
+<td><strong>Номер</strong></td>
+<td><strong>Описание</strong></td>
+<td><strong>Перенаправление</strong></td>
+</tr>
+<tr>
+<td>stdin</td>
+<td>0</td>
+<td>Стандартный ввод (клавиатура)</td>
+<td>&lt; файл</td>
+</tr>
+<tr>
+<td>stdout</td>
+<td>1</td>
+<td>Стандартный вывод (результат)</td>
+<td>&gt; файл или &gt;&gt; файл</td>
+</tr>
+<tr>
+<td>stderr</td>
+<td>2</td>
+<td>Поток ошибок</td>
+<td>2&gt; файл</td>
+</tr>
+</tbody>
+</table>
+<p><strong>6.2 Перенаправление</strong></p>
+<blockquote>
+<p># Запись в файл (перезаписать)</p>
+<p>echo 'текст' &gt; файл.txt</p>
+<p># Добавить в конец файла</p>
+<p>echo 'текст' &gt;&gt; файл.txt</p>
+<p># Перенаправить ошибки в файл</p>
+<p>команда 2&gt; errors.log</p>
+<p># Перенаправить и вывод и ошибки в один файл</p>
+<p>команда &gt; output.log 2&gt;&amp;1</p>
+<p>команда &amp;&gt; output.log # краткая форма</p>
+<p># Выбросить вывод (не показывать)</p>
+<p>команда &gt; /dev/null</p>
+<p>команда &gt; /dev/null 2&gt;&amp;1 # выбросить всё</p>
+<p># Читать из файла</p>
+<p>while IFS= read -r line; do</p>
+<p>echo "$line"</p>
+<p>done &lt; файл.txt</p>
+</blockquote>
+<p><strong>6.3 Pipe — конвейер команд</strong></p>
+<blockquote>
+<p># Передать вывод одной команды на вход другой</p>
+<p>ps aux | grep nginx</p>
+<p>cat /etc/passwd | cut -d: -f1 | sort</p>
+<p>df -h | tail -n +2 | awk '{print $5}'</p>
+<p># tee — вывести И записать в файл</p>
+<p>команда | tee файл.log # перезаписать</p>
+<p>команда | tee -a файл.log # добавить</p>
+<p>команда | tee файл.log | grep error # дальше в pipe</p>
+</blockquote>
+<p><strong>6.4 Here Document — heredoc</strong></p>
+<blockquote>
+<p># Многострочный ввод</p>
+<p>cat &lt;&lt; 'EOF'</p>
+<p>Это многострочный</p>
+<p>текст без</p>
+<p>подстановки переменных</p>
+<p>EOF</p>
+<p># С подстановкой переменных (без кавычек вокруг EOF)</p>
+<p>name='Kirill'</p>
+<p>cat &lt;&lt; EOF</p>
+<p>Привет, $name!</p>
+<p>Сегодня: $(date)</p>
+<p>EOF</p>
+<p># Запись в файл через heredoc</p>
+<p>cat &gt; /etc/nginx/conf.d/app.conf &lt;&lt; 'EOF'</p>
+<p>server {</p>
+<p>listen 80;</p>
+<p>location / { proxy_pass http://app:8000; }</p>
+<p>}</p>
+<p>EOF</p>
+</blockquote>
+<p><strong>7. Обработка текста — grep, sed, awk</strong></p>
+<p><strong>7.1 grep — поиск по шаблону</strong></p>
+<blockquote>
+<p># Базовый поиск</p>
+<p>grep 'nginx' /var/log/syslog</p>
+<p># Полезные флаги</p>
+<p>grep -i 'error' файл # -i игнорировать регистр</p>
+<p>grep -r 'TODO' ./src/ # -r рекурсивно по папке</p>
+<p>grep -n 'error' файл # -n показать номера строк</p>
+<p>grep -v 'DEBUG' файл # -v инвертировать (исключить)</p>
+<p>grep -c 'error' файл # -c подсчитать количество</p>
+<p>grep -l 'error' *.log # -l показать только имена файлов</p>
+<p>grep -A 3 'error' файл # -A 3 показать 3 строки ПОСЛЕ</p>
+<p>grep -B 3 'error' файл # -B 3 показать 3 строки ДО</p>
+<p>grep -E 'error|warning' # -E расширенный regex</p>
+<p># Regex примеры</p>
+<p>grep '^ERROR' файл # строки начинающиеся с ERROR</p>
+<p>grep 'ERROR$' файл # строки заканчивающиеся на ERROR</p>
+<p>grep '[0-9]\{3\}' файл # три цифры подряд</p>
+<p>grep -E '^[0-9]+\.' файл # строки начинающиеся с числа и точки</p>
+</blockquote>
+<p><strong>7.2 sed — потоковый редактор</strong></p>
+<blockquote>
+<p># Замена текста</p>
+<p>sed 's/старый/новый/' файл # первое вхождение в строке</p>
+<p>sed 's/старый/новый/g' файл # все вхождения (g=global)</p>
+<p>sed 's/старый/новый/gi' файл # игнорировать регистр</p>
+<p># Редактировать файл на месте</p>
+<p>sed -i 's/старый/новый/g' файл # изменить файл</p>
+<p>sed -i.bak 's/старый/новый/g' файл # с резервной копией .bak</p>
+<p># Удаление строк</p>
+<p>sed '/pattern/d' файл # удалить строки с pattern</p>
+<p>sed '5d' файл # удалить 5-ю строку</p>
+<p>sed '1,3d' файл # удалить строки 1-3</p>
+<p># Вывод определённых строк</p>
+<p>sed -n '5p' файл # показать 5-ю строку</p>
+<p>sed -n '1,10p' файл # показать строки 1-10</p>
+<p># Вставка строк</p>
+<p>sed '3a\новая строка' файл # добавить после 3-й</p>
+<p>sed '3i\новая строка' файл # вставить перед 3-й</p>
+</blockquote>
+<p><strong>7.3 awk — обработка таблиц</strong></p>
+<blockquote>
+<p># Базовый синтаксис: awk '{действие}' файл</p>
+<p># Поля разделены пробелом по умолчанию</p>
+<p># $1 = первое поле, $2 = второе, $NF = последнее</p>
+<p>awk '{print $1}' файл # первое поле каждой строки</p>
+<p>awk '{print $1, $3}' файл # первое и третье</p>
+<p>awk '{print NR, $0}' файл # номер строки + вся строка</p>
+<p># Другой разделитель</p>
+<p>awk -F: '{print $1}' /etc/passwd # разделитель :</p>
+<p>awk -F, '{print $2}' data.csv # разделитель ,</p>
+<p># Условия</p>
+<p>awk '$3 &gt; 100 {print $1}' файл # если 3-е поле &gt; 100</p>
+<p>awk '/error/ {print}' файл # строки содержащие error</p>
+<p>awk 'NR &gt; 1 {print}' файл # пропустить первую строку</p>
+<p># Вычисления</p>
+<p>awk '{sum += $3} END {print sum}' файл # сумма 3-го поля</p>
+<p>awk 'END {print NR}' файл # количество строк</p>
+<p># Реальные примеры</p>
+<p>df -h | awk '{print $5}' | tr -d '%' # заполненность дисков</p>
+<p>ps aux | awk '{print $1, $2, $11}' # user PID command</p>
+<p>cat /etc/passwd | awk -F: '{print $1}' # список пользователей</p>
+</blockquote>
+<p><strong>8. Обработка ошибок и отладка</strong></p>
+<p><strong>8.1 Коды возврата</strong></p>
+<blockquote>
+<p># Каждая команда возвращает код</p>
+<p># 0 = успех, 1-255 = ошибка</p>
+<p>ls /существующая/папка</p>
+<p>echo $? # 0 — успех</p>
+<p>ls /несуществующая/папка</p>
+<p>echo $? # 2 — ошибка</p>
+<p># Проверка успешности команды</p>
+<p>if command; then</p>
+<p>echo 'Команда успешна'</p>
+<p>fi</p>
+<p># Короткие формы</p>
+<p>command &amp;&amp; echo 'успех' # выполнить если команда успешна</p>
+<p>command || echo 'ошибка' # выполнить если команда неуспешна</p>
+<p>command || { echo 'ошибка'; exit 1; } # ошибка + выход</p>
+</blockquote>
+<p><strong>8.2 Trap — перехват сигналов</strong></p>
+<blockquote>
+<p># Выполнить функцию при выходе из скрипта</p>
+<p>cleanup() {</p>
+<p>echo 'Очистка временных файлов...'</p>
+<p>rm -f /tmp/tmpfile_$$</p>
+<p>}</p>
+<p>trap cleanup EXIT # при любом выходе</p>
+<p>trap cleanup INT TERM # при Ctrl+C или kill</p>
+<p># Игнорировать сигнал</p>
+<p>trap '' INT # игнорировать Ctrl+C</p>
+<p># Восстановить обработчик по умолчанию</p>
+<p>trap - INT</p>
+</blockquote>
+<p><strong>8.3 Отладка скриптов</strong></p>
+<blockquote>
+<p># Запустить с трассировкой</p>
+<p>bash -x script.sh # показать каждую команду</p>
+<p>bash -v script.sh # показать строки по мере чтения</p>
+<p>bash -n script.sh # проверить синтаксис без запуска</p>
+<p># Включить трассировку внутри скрипта</p>
+<p>set -x # включить</p>
+<p># ... проблемный код ...</p>
+<p>set +x # выключить</p>
+<p># Вывод отладочной информации</p>
+<p>debug() {</p>
+<p>[[ ${DEBUG:-0} == '1' ]] &amp;&amp; echo "[DEBUG] $*" &gt;&amp;2</p>
+<p>}</p>
+<p># Запуск с отладкой</p>
+<p>DEBUG=1 ./script.sh</p>
+</blockquote>
+<p><strong>9. Шаблоны и готовые скрипты</strong></p>
+<p><strong>9.1 Шаблон — основа любого скрипта</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p># ============================================</p>
+<p># Описание скрипта</p>
+<p># Использование: ./script.sh [аргументы]</p>
+<p># ============================================</p>
+<p># Константы</p>
+<p>readonly SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &amp;&amp;
+pwd)</p>
+<p>readonly SCRIPT_NAME=$(basename "$0")</p>
+<p>readonly LOG_FILE="/tmp/${SCRIPT_NAME%.sh}.log"</p>
+<p># Функция логирования</p>
+<p>log() {</p>
+<p>local level=$1; shift</p>
+<p>local message="$*"</p>
+<p>local timestamp=$(date +"%Y-%m-%d %H:%M:%S")</p>
+<p>echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"</p>
+<p>}</p>
+<p># Функция завершения с ошибкой</p>
+<p>die() {</p>
+<p>log 'ERROR' "$*"</p>
+<p>exit 1</p>
+<p>}</p>
+<p># Функция очистки</p>
+<p>cleanup() {</p>
+<p>log 'INFO' 'Завершение работы'</p>
+<p>}</p>
+<p>trap cleanup EXIT</p>
+<p># Проверка зависимостей</p>
+<p>check_deps() {</p>
+<p>local deps=('docker' 'curl' 'jq')</p>
+<p>for dep in "${deps[@]}"; do</p>
+<p>if ! command -v "$dep" &amp;&gt;/dev/null; then</p>
+<p>die "Не найдена зависимость: $dep"</p>
+<p>fi</p>
+<p>done</p>
+<p>}</p>
+<p># Главная функция</p>
+<p>main() {</p>
+<p>log 'INFO' "Запуск $SCRIPT_NAME"</p>
+<p>check_deps</p>
+<p># Ваш код здесь</p>
+<p>log 'INFO' "$SCRIPT_NAME завершён успешно"</p>
+<p>}</p>
+<p>main "$@"</p>
+</blockquote>
+<p><strong>9.2 Скрипт мониторинга системы</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p>THRESHOLD_CPU=80</p>
+<p>THRESHOLD_MEM=80</p>
+<p>THRESHOLD_DISK=85</p>
+<p>check_cpu() {</p>
+<p>local cpu=$(top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d.
+-f1)</p>
+<p>if [[ $cpu -ge $THRESHOLD_CPU ]]; then</p>
+<p>echo "WARN: CPU = ${cpu}%"</p>
+<p>else</p>
+<p>echo "OK: CPU = ${cpu}%"</p>
+<p>fi</p>
+<p>}</p>
+<p>check_memory() {</p>
+<p>local used=$(free | grep Mem | awk '{printf "%.0f", $3/$2*100}')</p>
+<p>if [[ $used -ge $THRESHOLD_MEM ]]; then</p>
+<p>echo "WARN: RAM = ${used}%"</p>
+<p>else</p>
+<p>echo "OK: RAM = ${used}%"</p>
+<p>fi</p>
+<p>}</p>
+<p>check_disk() {</p>
+<p>while IFS= read -r line; do</p>
+<p>local usage=$(echo "$line" | awk '{print $5}' | tr -d '%')</p>
+<p>local mount=$(echo "$line" | awk '{print $6}')</p>
+<p>local dev=$(echo "$line" | awk '{print $1}')</p>
+<p>[[ "$dev" == tmpfs* ]] &amp;&amp; continue</p>
+<p>if [[ $usage -ge $THRESHOLD_DISK ]]; then</p>
+<p>echo "WARN: Диск $mount = ${usage}%"</p>
+<p>else</p>
+<p>echo "OK: Диск $mount = ${usage}%"</p>
+<p>fi</p>
+<p>done &lt; &lt;(df -h | tail -n +2)</p>
+<p>}</p>
+<p>echo '=== Мониторинг системы ==='</p>
+<p>echo "Время: $(date '+%Y-%m-%d %H:%M:%S')"</p>
+<p>echo '---'</p>
+<p>check_cpu</p>
+<p>check_memory</p>
+<p>check_disk</p>
+</blockquote>
+<p><strong>9.3 Скрипт резервного копирования</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p>SOURCE_DIR=${1:?'Укажите папку для бэкапа'}</p>
+<p>BACKUP_DIR=${2:-'/tmp/backups'}</p>
+<p>KEEP_DAYS=${3:-7}</p>
+<p>TIMESTAMP=$(date +"%Y%m%d_%H%M%S")</p>
+<p>BACKUP_FILE="$BACKUP_DIR/backup_${TIMESTAMP}.tar.gz"</p>
+<p>mkdir -p "$BACKUP_DIR"</p>
+<p>echo "Создаю бэкап: $BACKUP_FILE"</p>
+<p>tar -czf "$BACKUP_FILE" "$SOURCE_DIR"</p>
+<p>echo "Размер: $(du -sh $BACKUP_FILE | cut -f1)"</p>
+<p># Удалить старые бэкапы</p>
+<p>echo "Удаляю бэкапы старше $KEEP_DAYS дней..."</p>
+<p>find "$BACKUP_DIR" -name 'backup_*.tar.gz' -mtime +$KEEP_DAYS
+-delete</p>
+<p>echo "Готово. Бэкапов сохранено: $(ls $BACKUP_DIR | wc -l)"</p>
+</blockquote>
+<p><strong>9.4 Скрипт проверки сервисов</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p>SERVICES=('nginx' 'docker' 'sshd' 'fail2ban')</p>
+<p>FAILED=0</p>
+<p>check_service() {</p>
+<p>local service=$1</p>
+<p>if systemctl is-active --quiet "$service"; then</p>
+<p>echo "✅ $service — работает"</p>
+<p>else</p>
+<p>echo "❌ $service — ОСТАНОВЛЕН"</p>
+<p>FAILED=$((FAILED + 1))</p>
+<p>fi</p>
+<p>}</p>
+<p>echo '=== Проверка сервисов ==='</p>
+<p>for service in "${SERVICES[@]}"; do</p>
+<p>check_service "$service"</p>
+<p>done</p>
+<p>if [[ $FAILED -gt 0 ]]; then</p>
+<p>echo "ВНИМАНИЕ: $FAILED сервис(ов) не работает!"</p>
+<p>exit 1</p>
+<p>else</p>
+<p>echo 'Все сервисы работают'</p>
+<p>fi</p>
+</blockquote>
+<p><strong>9.5 Скрипт деплоя приложения</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p>APP_DIR=${APP_DIR:-"$HOME/app"}</p>
+<p>COMPOSE_FILE="$APP_DIR/docker-compose.yml"</p>
+<p>LOG_FILE='/tmp/deploy.log'</p>
+<p>log() { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG_FILE"; }</p>
+<p>die() { log "ERROR: $*"; exit 1; }</p>
+<p>start() {</p>
+<p>log 'Запуск стека...'</p>
+<p>docker compose -f "$COMPOSE_FILE" up -d</p>
+<p>health_check</p>
+<p>}</p>
+<p>stop() {</p>
+<p>log 'Остановка стека...'</p>
+<p>docker compose -f "$COMPOSE_FILE" down</p>
+<p>}</p>
+<p>health_check() {</p>
+<p>local url=${HEALTH_URL:-'http://localhost:80/live'}</p>
+<p>local attempts=5</p>
+<p>local n=0</p>
+<p>while [[ $n -lt $attempts ]]; do</p>
+<p>curl -sf "$url" &amp;&gt;/dev/null &amp;&amp; { log '✅ Сервис
+доступен'; return 0; }</p>
+<p>((n++))</p>
+<p>log "Попытка $n/$attempts..."</p>
+<p>sleep 3</p>
+<p>done</p>
+<p>die 'Сервис не отвечает!'</p>
+<p>}</p>
+<p>case "${1:-help}" in</p>
+<p>start) start ;;</p>
+<p>stop) stop ;;</p>
+<p>restart) stop; sleep 2; start ;;</p>
+<p>status) docker compose -f "$COMPOSE_FILE" ps ;;</p>
+<p>logs) docker compose -f "$COMPOSE_FILE" logs --tail 50 ;;</p>
+<p>health) health_check ;;</p>
+<p>*)</p>
+<p>echo "Использование: $0 {start|stop|restart|status|logs|health}"</p>
+<p>exit 0 ;;</p>
+<p>esac</p>
+</blockquote>
+<p><strong>9.6 Парсер логов</strong></p>
+<blockquote>
+<p>#!/usr/bin/env bash</p>
+<p>set -euo pipefail</p>
+<p>LOG_FILE=${1:-'/var/log/nginx/access.log'}</p>
+<p>TOP_N=${2:-10}</p>
+<p>[[ -f "$LOG_FILE" ]] || { echo "Файл не найден: $LOG_FILE"; exit 1;
+}</p>
+<p>echo "=== Анализ логов: $LOG_FILE ==="</p>
+<p>echo "Период: $(head -1 $LOG_FILE | awk '{print $4}') — $(tail -1
+$LOG_FILE | awk '{print $4}')"</p>
+<p>echo "Всего запросов: $(wc -l &lt; $LOG_FILE)"</p>
+<p>echo ''</p>
+<p>echo "--- Топ $TOP_N IP адресов ---"</p>
+<p>awk '{print $1}' "$LOG_FILE" | sort | uniq -c | sort -rn | head
+-$TOP_N</p>
+<p>echo ''</p>
+<p>echo '--- Статусы ответов ---'</p>
+<p>awk '{print $9}' "$LOG_FILE" | sort | uniq -c | sort -rn</p>
+<p>echo ''</p>
+<p>echo '--- Топ запрашиваемых URL ---'</p>
+<p>awk '{print $7}' "$LOG_FILE" | sort | uniq -c | sort -rn | head
+-$TOP_N</p>
+<p>echo ''</p>
+<p>echo '--- Ошибки 4xx и 5xx ---'</p>
+<p>awk '$9 &gt;= 400 {print $9, $7}' "$LOG_FILE" | sort | uniq -c | sort
+-rn | head -$TOP_N</p>
+</blockquote>
+<p><strong>10. Типичные ошибки и их решение</strong></p>
+<blockquote>
+<p>❌ Ошибка: command not found при объявлении переменной</p>
+</blockquote>
+<p>Причина: пробелы вокруг знака =</p>
+<blockquote>
+<p>имя = 'Kirill' # ошибка — пробелы</p>
+<p>✅ имя='Kirill' # правильно — без пробелов</p>
+<p>❌ Ошибка: [: ожидается унарный оператор</p>
+</blockquote>
+<p>Причина: переменная пустая или содержит пробелы, используются [ ]
+вместо [[ ]]</p>
+<blockquote>
+<p>if [ $UNDEFINED -eq 5 ]; then # ошибка</p>
+<p>✅ if [[ $UNDEFINED -eq 5 ]]; then # правильно</p>
+<p>❌ Ошибка: кириллица в именах переменных не работает с set -u</p>
+</blockquote>
+<p>Причина: Bash не поддерживает кириллицу в именах переменных</p>
+<blockquote>
+<p>ПОРОГ=80 # может работать без set -u, ломается с ним</p>
+<p>✅ THRESHOLD=80 # всегда используйте латиницу в именах переменных</p>
+<p>❌ Ошибка: скрипт продолжает работу после ошибки</p>
+</blockquote>
+<p>Причина: не установлены защитные флаги</p>
+<blockquote>
+<p>✅ Добавьте в начало: set -euo pipefail</p>
+<p>❌ Ошибка: переменная в функции перезаписывает глобальную</p>
+</blockquote>
+<p>Причина: не использован local</p>
+<blockquote>
+<p>func() { count=0; } # перезаписывает глобальный count</p>
+<p>✅ func() { local count=0; } # изолировано внутри функции</p>
+<p>❌ Ошибка: функция не найдена</p>
+</blockquote>
+<p>Причина: функция вызвана до её объявления</p>
+<blockquote>
+<p>main # вызов</p>
+<p>main() { echo 'hello'; } # объявление ПОСЛЕ — ошибка</p>
+<p>✅ Объявляйте функции ДО их вызова. Рекомендуется: все функции
+сверху, вызов main в конце</p>
+<p>❌ Ошибка: $() не работает внутри одинарных кавычек</p>
+<p>echo '$(date)' # выведет буквально $(date)</p>
+<p>✅ echo "$(date)" # двойные кавычки — подстановка работает</p>
+</blockquote>
+<p><strong>11. Быстрый справочник</strong></p>
+<p><strong>Форматы date</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr>
+<td><strong>Формат</strong></td>
+<td><strong>Результат</strong></td>
+<td><strong>Использование</strong></td>
+</tr>
+<tr>
+<td>%Y-%m-%d</td>
+<td>2026-05-17</td>
+<td>ISO формат — стандарт DevOps</td>
+</tr>
+<tr>
+<td>%d.%m.%Y</td>
+<td>17.05.2026</td>
+<td>Русский формат</td>
+</tr>
+<tr>
+<td>%H:%M:%S</td>
+<td>15:30:45</td>
+<td>Время</td>
+</tr>
+<tr>
+<td>%Y%m%d_%H%M%S</td>
+<td>20260517_153045</td>
+<td>Имена файлов бэкапов</td>
+</tr>
+<tr>
+<td>%s</td>
+<td>1747487445</td>
+<td>Unix timestamp</td>
+</tr>
+<tr>
+<td>%A</td>
+<td>Monday</td>
+<td>День недели</td>
+</tr>
+<tr>
+<td>%B</td>
+<td>May</td>
+<td>Месяц прописью</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Полезные однострочники</strong></p>
+<blockquote>
+<p># Найти и заменить рекурсивно во всех файлах</p>
+<p>grep -rl 'старый' . | xargs sed -i 's/старый/новый/g'</p>
+<p># Топ 10 больших файлов</p>
+<p>find / -type f -exec du -sh {} + 2&gt;/dev/null | sort -rh | head
+-10</p>
+<p># Подождать пока сервис запустится</p>
+<p>until curl -sf http://localhost:8000/live; do sleep 2; done</p>
+<p># Выполнить команду на всех серверах</p>
+<p>for server in web1 web2 web3; do ssh $server 'uptime'; done</p>
+<p># Создать папки для каждого месяца года</p>
+<p>for month in {01..12}; do mkdir -p "2026-$month"; done</p>
+<p># Мониторинг в реальном времени</p>
+<p>watch -n 5 'docker compose ps'</p>
+<p># Найти процессы потребляющие более 50% CPU</p>
+<p>ps aux | awk '$3 &gt; 50 {print $0}'</p>
+<p># Подсчитать строки кода в проекте</p>
+<p>find . -name '*.py' | xargs wc -l | tail -1</p>
+</blockquote>
+<p>Kirill Neustroev · Bash Scripting Guide · 2026 ·
+github.com/khimeran</p>
+</body>
+</html>
